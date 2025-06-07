@@ -69,7 +69,7 @@ export interface FileUploadResponse {
 class QuestionsService {
   // Soruları listele
   async getQuestions(params: GetQuestionsParams = {}): Promise<QuestionsResponse> {
-    const response = await api.get('/questions', { params });
+    const response = await api.get('/admin/questions', { params });
     return response.data.data;
   }
 
