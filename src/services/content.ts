@@ -27,6 +27,8 @@ export interface Subject {
   id: string;
   name: string;
   description: string;
+  min_class_level: number;
+  max_class_level: number;
   orderIndex: number;
   isActive: boolean;
   createdAt: string;
@@ -85,16 +87,18 @@ export interface CreateClassData {
 export interface CreateSubjectData {
   name: string;
   description: string;
+  min_class_level: number;
+  max_class_level: number;
   orderIndex: number;
   isActive?: boolean;
 }
 
 export interface CreateTopicData {
   name: string;
+  description?: string;
   orderIndex: number;
   subjectId: string;
   classId: string;
-  class_level: number;
   parentId?: string;
   isActive?: boolean;
 }
