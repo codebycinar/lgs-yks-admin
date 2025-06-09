@@ -13,7 +13,6 @@ import {
   MenuItem,
   IconButton,
   Typography,
-  Grid,
   Paper,
   Table,
   TableBody,
@@ -332,16 +331,16 @@ const Questions: React.FC = () => {
         </Alert>
       )}
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <TextField
             fullWidth
             label="Soru Ara"
             value={searchQuery}
             onChange={handleSearchChange}
           />
-        </Grid>
-        <Grid item xs={12} sm={4}>
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <FormControl fullWidth>
             <InputLabel>Konu</InputLabel>
             <Select
@@ -357,8 +356,8 @@ const Questions: React.FC = () => {
               ))}
             </Select>
           </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={4}>
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 200 }}>
           <FormControl fullWidth>
             <InputLabel>Zorluk Seviyesi</InputLabel>
             <Select
@@ -372,8 +371,8 @@ const Questions: React.FC = () => {
               <MenuItem value="3">Zor</MenuItem>
             </Select>
           </FormControl>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       <TableContainer component={Paper}>
         <Table>
@@ -473,8 +472,8 @@ const Questions: React.FC = () => {
       >
         <DialogTitle>Yeni Soru Oluştur</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
                 label="Soru Metni"
@@ -484,8 +483,8 @@ const Questions: React.FC = () => {
                 multiline
                 rows={4}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
                 label="Çözüm"
@@ -495,8 +494,8 @@ const Questions: React.FC = () => {
                 multiline
                 rows={4}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <FormControl fullWidth>
                 <InputLabel>Konu</InputLabel>
                 <Select
@@ -512,8 +511,8 @@ const Questions: React.FC = () => {
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <FormControl fullWidth>
                 <InputLabel>Zorluk Seviyesi</InputLabel>
                 <Select
@@ -527,8 +526,8 @@ const Questions: React.FC = () => {
                   <MenuItem value={3}>Zor</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
                 label="Tahmini Süre (saniye)"
@@ -537,8 +536,8 @@ const Questions: React.FC = () => {
                 value={questionForm.estimated_time}
                 onChange={handleFormChange}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <FormControl fullWidth>
                 <InputLabel>Durum</InputLabel>
                 <Select
@@ -551,15 +550,15 @@ const Questions: React.FC = () => {
                   <MenuItem value="false">Pasif</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Cevaplar
               </Typography>
               {questionForm.answers.map((answer, index) => (
                 <Box key={index} sx={{ mb: 2 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }} >
+                    <Box sx={{ width: "100%", mb: 2 }}>
                       <TextField
                         fullWidth
                         label={`${answer.option_letter} Şıkkı`}
@@ -568,8 +567,8 @@ const Questions: React.FC = () => {
                           handleAnswerChange(index, 'answer_text', e.target.value)
                         }
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+                    </Box>
+                    <Box sx={{ width: "100%", mb: 2 }}>
                       <FormControl fullWidth>
                         <InputLabel>Doğru Cevap</InputLabel>
                         <Select
@@ -587,12 +586,12 @@ const Questions: React.FC = () => {
                           <MenuItem value="false">Yanlış</MenuItem>
                         </Select>
                       </FormControl>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 </Box>
               ))}
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCreateDialogOpen(false)}>İptal</Button>
@@ -611,8 +610,8 @@ const Questions: React.FC = () => {
       >
         <DialogTitle>Soru Düzenle</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
                 label="Soru Metni"
@@ -622,8 +621,8 @@ const Questions: React.FC = () => {
                 multiline
                 rows={4}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
                 label="Çözüm"
@@ -633,8 +632,8 @@ const Questions: React.FC = () => {
                 multiline
                 rows={4}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <FormControl fullWidth>
                 <InputLabel>Konu</InputLabel>
                 <Select
@@ -650,8 +649,8 @@ const Questions: React.FC = () => {
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <FormControl fullWidth>
                 <InputLabel>Zorluk Seviyesi</InputLabel>
                 <Select
@@ -665,8 +664,8 @@ const Questions: React.FC = () => {
                   <MenuItem value={3}>Zor</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <TextField
                 fullWidth
                 label="Tahmini Süre (saniye)"
@@ -675,8 +674,8 @@ const Questions: React.FC = () => {
                 value={questionForm.estimated_time}
                 onChange={handleFormChange}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <FormControl fullWidth>
                 <InputLabel>Durum</InputLabel>
                 <Select
@@ -689,15 +688,15 @@ const Questions: React.FC = () => {
                   <MenuItem value="false">Pasif</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12}>
+            </Box>
+            <Box sx={{ width: "100%", mb: 2 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Cevaplar
               </Typography>
               {questionForm.answers.map((answer, index) => (
                 <Box key={index} sx={{ mb: 2 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }} >
+                    <Box sx={{ width: "100%", mb: 2 }}>
                       <TextField
                         fullWidth
                         label={`${answer.option_letter} Şıkkı`}
@@ -706,8 +705,8 @@ const Questions: React.FC = () => {
                           handleAnswerChange(index, 'answer_text', e.target.value)
                         }
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+                    </Box>
+                    <Box sx={{ width: "100%", mb: 2 }}>
                       <FormControl fullWidth>
                         <InputLabel>Doğru Cevap</InputLabel>
                         <Select
@@ -725,12 +724,12 @@ const Questions: React.FC = () => {
                           <MenuItem value="false">Yanlış</MenuItem>
                         </Select>
                       </FormControl>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 </Box>
               ))}
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>İptal</Button>
@@ -750,20 +749,20 @@ const Questions: React.FC = () => {
         <DialogTitle>Soru Detayı</DialogTitle>
         <DialogContent>
           {selectedQuestion && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="h6">Soru</Typography>
                 <Typography>{selectedQuestion.question_text}</Typography>
-              </Grid>
-              <Grid item xs={12}>
+              </Box>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="h6">Çözüm</Typography>
                 <Typography>{selectedQuestion.solution_text}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              </Box>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="h6">Konu</Typography>
                 <Typography>{selectedQuestion.topic_name}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              </Box>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="h6">Zorluk Seviyesi</Typography>
                 <Typography>
                   {selectedQuestion.difficulty_level === 1
@@ -772,18 +771,18 @@ const Questions: React.FC = () => {
                     ? 'Orta'
                     : 'Zor'}
                 </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              </Box>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="h6">Tahmini Süre</Typography>
                 <Typography>{selectedQuestion.estimated_time} saniye</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              </Box>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="h6">Durum</Typography>
                 <Typography>
                   {selectedQuestion.is_active ? 'Aktif' : 'Pasif'}
                 </Typography>
-              </Grid>
-              <Grid item xs={12}>
+              </Box>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <Typography variant="h6">Cevaplar</Typography>
                 {selectedQuestion.answers.map((answer, index) => (
                   <Box key={index} sx={{ mb: 2 }}>
@@ -793,8 +792,8 @@ const Questions: React.FC = () => {
                     </Typography>
                   </Box>
                 ))}
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>

@@ -96,36 +96,36 @@ const Content = () => {
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
 
   // Form states
-  const [examForm, setExamForm] = useState<CreateExamData>({
+  const [examForm, setExamForm] = useState({
     name: '',
-    examDate: '',
-    targetClassLevels: [],
-    prepClassLevels: [],
+    exam_date: '',
+    target_class_levels: [] as number[],
+    prep_class_levels: [] as number[],
     description: '',
-    isActive: true
+    is_active: true
   });
 
-  const [classForm, setClassForm] = useState<CreateClassData>({
+  const [classForm, setClassForm] = useState({
     name: '',
-    minClassLevel: 5,
-    maxClassLevel: 8,
-    examId: '',
-    isActive: true
+    min_class_level: 5,
+    max_class_level: 8,
+    exam_id: '',
+    is_active: true
   });
 
-  const [subjectForm, setSubjectForm] = useState<CreateSubjectData>({
+  const [subjectForm, setSubjectForm] = useState({
     name: '',
     description: '',
     min_class_level: 6,
     max_class_level: 12,
-    orderIndex: 0,
-    isActive: true
+    order_index: 0,
+    is_active: true
   });
 
-  const [topicForm, setTopicForm] = useState<CreateTopicData>({
+  const [topicForm, setTopicForm] = useState({
     name: '',
     description: '',
-    orderIndex: 0,
+    order_index: 0,
     subject_id: '',
     class_id: '',
     parent_id:'',
@@ -191,11 +191,11 @@ const Content = () => {
       setExamDialogOpen(false);
       setExamForm({
         name: '',
-        examDate: '',
-        targetClassLevels: [],
-        prepClassLevels: [],
+        exam_date: '',
+        target_class_levels: [],
+        prep_class_levels: [],
         description: '',
-        isActive: true
+        is_active: true
       });
       await loadAllData();
     } catch (error: any) {
@@ -213,10 +213,10 @@ const Content = () => {
       setClassDialogOpen(false);
       setClassForm({
         name: '',
-        minClassLevel: 5,
-        maxClassLevel: 8,
-        examId: '',
-        isActive: true
+        min_class_level: 5,
+        max_class_level: 8,
+        exam_id: '',
+        is_active: true
       });
       await loadAllData();
     } catch (error: any) {
@@ -237,8 +237,8 @@ const Content = () => {
         description: '',
         min_class_level: 6,
         max_class_level: 12,
-        orderIndex: 0,
-        isActive: true
+        order_index: 0,
+        is_active: true
       });
       await loadAllData();
     } catch (error: any) {
@@ -257,7 +257,7 @@ const Content = () => {
       setTopicForm({
         name: '',
         description: '',
-        orderIndex: 0,
+        order_index: 0,
         subject_id: '',
         class_id: '',
         parent_id: '',
@@ -272,7 +272,7 @@ const Content = () => {
   };
 
   // Sınıf seviyesi checkbox handler
-  const handleClassLevelChange = (level: number, field: 'targetClassLevels' | 'prepClassLevels') => {
+  const handleClassLevelChange = (level: number, field: 'target_class_levels' | 'prep_class_levels') => {
     setExamForm(prev => ({
       ...prev,
       [field]: prev[field].includes(level)
@@ -286,7 +286,7 @@ const Content = () => {
     const selectedTopicId = event.target.value;
     setTopicForm(prev => ({
       ...prev,
-      parentId: selectedTopicId
+      parent_id: selectedTopicId
     }));
   };
 
@@ -315,7 +315,7 @@ const Content = () => {
     setTopicForm({
       name: topic.name,
       description: '',
-      orderIndex: topic.order_index,
+      order_index: topic.order_index,
       subject_id: topic.subject_id,
       class_id: topic.class_id,
       parent_id: topic.parent_id || '',
@@ -346,7 +346,7 @@ const Content = () => {
       setTopicForm({
         name: '',
         description: '',
-        orderIndex: 0,
+        order_index: 0,
         subject_id: '',
         class_id: '',
         parent_id: '',
@@ -422,18 +422,18 @@ const Content = () => {
                 {exams.map((exam) => (
                   <TableRow key={exam.id}>
                     <TableCell>{exam.name}</TableCell>
-                    <TableCell>{formatDate(exam.examDate)}</TableCell>
+                    <TableCell>{formatDate(exam.exam_date)}</TableCell>
                     <TableCell>
-                      {exam.targetClassLevels.map(level => (
+                      {exam.target_class_levels.map(level => (
                         <Chip key={level} label={`${level}. Sınıf`} size="small" sx={{ mr: 0.5 }} />
                       ))}
                     </TableCell>
                     <TableCell>
-                      {exam.prepClassLevels.map(level => (
+                      {exam.prep_class_levels.map(level => (
                         <Chip key={level} label={`${level}. Sınıf`} size="small" sx={{ mr: 0.5 }} />
                       ))}
                     </TableCell>
-                    <TableCell>{formatDate(exam.createdAt)}</TableCell>
+                    <TableCell>{formatDate(exam.created_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -468,10 +468,10 @@ const Content = () => {
                 {classes.map((classItem) => (
                   <TableRow key={classItem.id}>
                     <TableCell>{classItem.name}</TableCell>
-                    <TableCell>{classItem.minClassLevel}. Sınıf</TableCell>
-                    <TableCell>{classItem.maxClassLevel}. Sınıf</TableCell>
-                    <TableCell>{classItem.examId || '-'}</TableCell>
-                    <TableCell>{formatDate(classItem.createdAt)}</TableCell>
+                    <TableCell>{classItem.min_class_level}. Sınıf</TableCell>
+                    <TableCell>{classItem.max_class_level}. Sınıf</TableCell>
+                    <TableCell>{classItem.exam_name || '-'}</TableCell>
+                    <TableCell>{formatDate(classItem.created_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -496,7 +496,8 @@ const Content = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Ders Adı</TableCell>
-                  <TableCell>Sıra</TableCell>
+                  <TableCell>Min Sınıf</TableCell>
+                  <TableCell>Max Sınıf</TableCell>
                   <TableCell>Durum</TableCell>
                   <TableCell>Oluşturulma</TableCell>
                 </TableRow>
@@ -505,6 +506,8 @@ const Content = () => {
                 {subjects.map((subject) => (
                   <TableRow key={subject.id}>
                     <TableCell>{subject.name}</TableCell>
+                    <TableCell>{subject.min_class_level || '-'}. Sınıf</TableCell>
+                    <TableCell>{subject.max_class_level || '-'}. Sınıf</TableCell>
                     <TableCell>
                       <Chip
                         label={subject.is_active ? 'Aktif' : 'Pasif'}
@@ -512,6 +515,7 @@ const Content = () => {
                         size="small"
                       />
                     </TableCell>
+                    <TableCell>{formatDate(subject.created_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -538,7 +542,7 @@ const Content = () => {
                   <TableCell>Konu Adı</TableCell>
                   <TableCell>Ders</TableCell>
                   <TableCell>Sınıf</TableCell>
-                  <TableCell>Sınıf Seviyesi</TableCell>
+                  <TableCell>Durum</TableCell>
                   <TableCell>Üst Konu</TableCell>
                   <TableCell>Sıra</TableCell>
                   <TableCell>İşlemler</TableCell>
@@ -550,7 +554,13 @@ const Content = () => {
                     <TableCell>{topic.name}</TableCell>
                     <TableCell>{topic.subject_name}</TableCell>
                     <TableCell>{topic.class_name}</TableCell>
-                    <TableCell>{topic.order_index}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={topic.is_active ? 'Aktif' : 'Pasif'}
+                        color={topic.is_active ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
                     <TableCell>{topic.parent_name || 'Ana Konu'}</TableCell>
                     <TableCell>{topic.order_index}</TableCell>
                     <TableCell>
@@ -586,8 +596,8 @@ const Content = () => {
                 fullWidth
                 label="Sınav Tarihi"
                 type="date"
-                value={examForm.examDate}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamForm(prev => ({ ...prev, examDate: e.target.value }))}
+                value={examForm.exam_date}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamForm(prev => ({ ...prev, exam_date: e.target.value }))}
                 InputLabelProps={{ shrink: true }}
                 sx={{ minWidth: 200 }}
               />
@@ -599,8 +609,8 @@ const Content = () => {
                     key={level}
                     control={
                       <Checkbox
-                        checked={examForm.targetClassLevels.includes(level)}
-                        onChange={() => handleClassLevelChange(level, 'targetClassLevels')}
+                        checked={examForm.target_class_levels.includes(level)}
+                        onChange={() => handleClassLevelChange(level, 'target_class_levels')}
                       />
                     }
                     label={`${level}. Sınıf`}
@@ -615,8 +625,8 @@ const Content = () => {
                     key={level}
                     control={
                       <Checkbox
-                        checked={examForm.prepClassLevels.includes(level)}
-                        onChange={() => handleClassLevelChange(level, 'prepClassLevels')}
+                        checked={examForm.prep_class_levels.includes(level)}
+                        onChange={() => handleClassLevelChange(level, 'prep_class_levels')}
                       />
                     }
                     label={`${level}. Sınıf`}
@@ -657,8 +667,8 @@ const Content = () => {
               <FormControl fullWidth>
                 <InputLabel>Min Sınıf Seviyesi</InputLabel>
                 <Select
-                  value={classForm.minClassLevel}
-                  onChange={(e: SelectChangeEvent<number>) => setClassForm(prev => ({ ...prev, minClassLevel: Number(e.target.value) }))}
+                  value={classForm.min_class_level}
+                  onChange={(e: SelectChangeEvent<number>) => setClassForm(prev => ({ ...prev, min_class_level: Number(e.target.value) }))}
                   label="Min Sınıf Seviyesi"
                 >
                   {[5, 6, 7, 8].map(level => (
@@ -670,8 +680,8 @@ const Content = () => {
               <FormControl fullWidth>
                 <InputLabel>Max Sınıf Seviyesi</InputLabel>
                 <Select
-                  value={classForm.maxClassLevel}
-                  onChange={(e: SelectChangeEvent<number>) => setClassForm(prev => ({ ...prev, maxClassLevel: Number(e.target.value) }))}
+                  value={classForm.max_class_level}
+                  onChange={(e: SelectChangeEvent<number>) => setClassForm(prev => ({ ...prev, max_class_level: Number(e.target.value) }))}
                   label="Max Sınıf Seviyesi"
                 >
                   {[5, 6, 7, 8].map(level => (
@@ -684,8 +694,8 @@ const Content = () => {
             <FormControl fullWidth>
               <InputLabel>Bağlı Sınav (Opsiyonel)</InputLabel>
               <Select
-                value={classForm.examId || ''}
-                onChange={(e: SelectChangeEvent<string>) => setClassForm(prev => ({ ...prev, examId: e.target.value }))}
+                value={classForm.exam_id || ''}
+                onChange={(e: SelectChangeEvent<string>) => setClassForm(prev => ({ ...prev, exam_id: e.target.value }))}
                 label="Bağlı Sınav (Opsiyonel)"
               >
                 <MenuItem value="">Seçiniz</MenuItem>
@@ -717,8 +727,8 @@ const Content = () => {
               fullWidth
               type="number"
               label="Sıra Numarası"
-              value={subjectForm.orderIndex}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubjectForm(prev => ({ ...prev, orderIndex: Number(e.target.value) }))}
+              value={subjectForm.order_index}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubjectForm(prev => ({ ...prev, order_index: Number(e.target.value) }))}
             />
           </Box>
         </DialogContent>
@@ -805,10 +815,10 @@ const Content = () => {
 
             <TextField
               fullWidth
-              name="orderIndex"
+              name="order_index"
               type="number"
               label="Sıra Numarası"
-              value={topicForm.orderIndex}
+              value={topicForm.order_index}
               onChange={handleTopicFormChange}
             />
 

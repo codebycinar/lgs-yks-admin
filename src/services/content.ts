@@ -3,29 +3,30 @@ import api from './api';
 export interface Exam {
   id: string;
   name: string;
-  examDate: string;
-  targetClassLevels: number[];
-  prepClassLevels: number[];
+  exam_date: string;
+  target_class_levels: number[];
+  prep_class_levels: number[];
   description: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Class {
   id: string;
   name: string;
-  minClassLevel: number;
-  maxClassLevel: number;
-  examId: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  min_class_level: number;
+  max_class_level: number;
+  exam_name?: string;
+  exam_date?: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Subject {
   id: string;
   name: string;
+  min_class_level: number;
+  max_class_level: number;
   order_index: number;
   is_active: boolean;
   created_at: string;
@@ -76,19 +77,19 @@ export interface Question {
 
 export interface CreateExamData {
   name: string;
-  examDate: string;
-  targetClassLevels: number[];
-  prepClassLevels: number[];
+  exam_date: string;
+  target_class_levels: number[];
+  prep_class_levels: number[];
   description: string;
-  isActive?: boolean;
+  is_active?: boolean;
 }
 
 export interface CreateClassData {
   name: string;
-  minClassLevel: number;
-  maxClassLevel: number;
-  examId: string;
-  isActive?: boolean;
+  min_class_level: number;
+  max_class_level: number;
+  exam_id: string;
+  is_active?: boolean;
 }
 
 export interface CreateSubjectData {
@@ -96,13 +97,13 @@ export interface CreateSubjectData {
   description: string;
   min_class_level: number;
   max_class_level: number;
-  orderIndex: number;
-  isActive?: boolean;
+  order_index: number;
+  is_active?: boolean;
 }
 
 export interface CreateTopicData {
   name: string;
-  orderIndex: number;
+  order_index: number;
   class_id: string;
   parent_id: string;
   description: string;
