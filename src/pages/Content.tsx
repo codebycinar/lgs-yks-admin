@@ -549,7 +549,7 @@ const Content = () => {
                   <TableRow key={topic.id}>
                     <TableCell>{topic.name}</TableCell>
                     <TableCell>{topic.subject_name}</TableCell>
-                    <TableCell>Sınıf</TableCell>
+                    <TableCell>{topic.class_name}</TableCell>
                     <TableCell>{topic.order_index}</TableCell>
                     <TableCell>{topic.parent_name || 'Ana Konu'}</TableCell>
                     <TableCell>{topic.order_index}</TableCell>

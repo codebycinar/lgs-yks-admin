@@ -41,6 +41,7 @@ export interface Topic {
   is_active: boolean;
   created_at: string;
   subject_name: string;
+  class_name: string;
   parent_name: string | null;
 }
 
