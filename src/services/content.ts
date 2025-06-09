@@ -178,16 +178,43 @@ const contentService = {
     return response.data.data;
   },
 
+  updateExam: async (id: string, data: CreateExamData): Promise<Exam> => {
+    const response = await api.put(`/admin/exams/${id}`, data);
+    return response.data.data;
+  },
+
+  deleteExam: async (id: string): Promise<void> => {
+    await api.delete(`/admin/exams/${id}`);
+  },
+
   // Sınıflar
   createClass: async (data: CreateClassData): Promise<Class> => {
     const response = await api.post('/admin/classes', data);
     return response.data.data;
   },
 
+  updateClass: async (id: string, data: CreateClassData): Promise<Class> => {
+    const response = await api.put(`/admin/classes/${id}`, data);
+    return response.data.data;
+  },
+
+  deleteClass: async (id: string): Promise<void> => {
+    await api.delete(`/admin/classes/${id}`);
+  },
+
   // Dersler
   createSubject: async (data: CreateSubjectData): Promise<Subject> => {
     const response = await api.post('/admin/subjects', data);
     return response.data.data;
+  },
+
+  updateSubject: async (id: string, data: CreateSubjectData): Promise<Subject> => {
+    const response = await api.put(`/admin/subjects/${id}`, data);
+    return response.data.data;
+  },
+
+  deleteSubject: async (id: string): Promise<void> => {
+    await api.delete(`/admin/subjects/${id}`);
   },
 
   // Konular

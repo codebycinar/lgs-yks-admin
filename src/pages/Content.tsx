@@ -94,6 +94,11 @@ const Content = () => {
   const [topicDialogOpen, setTopicDialogOpen] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  
+  // Editing states
+  const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [editingClass, setEditingClass] = useState<ClassType | null>(null);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 
   // Form states
   const [examForm, setExamForm] = useState({
@@ -183,12 +188,17 @@ const Content = () => {
     setTabValue(newValue);
   };
 
-  // Sınav oluşturma
+  // Sınav oluşturma/güncelleme
   const handleCreateExam = async () => {
     try {
       setLoading(true);
-      await contentService.createExam(examForm);
+      if (editingExam) {
+        await contentService.updateExam(editingExam.id, examForm);
+      } else {
+        await contentService.createExam(examForm);
+      }
       setExamDialogOpen(false);
+      setEditingExam(null);
       setExamForm({
         name: '',
         exam_date: '',
@@ -199,18 +209,23 @@ const Content = () => {
       });
       await loadAllData();
     } catch (error: any) {
-      setError('Sınav oluşturulurken hata oluştu');
+      setError(editingExam ? 'Sınav güncellenirken hata oluştu' : 'Sınav oluşturulurken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
-  // Sınıf oluşturma
+  // Sınıf oluşturma/güncelleme
   const handleCreateClass = async () => {
     try {
       setLoading(true);
-      await contentService.createClass(classForm);
+      if (editingClass) {
+        await contentService.updateClass(editingClass.id, classForm);
+      } else {
+        await contentService.createClass(classForm);
+      }
       setClassDialogOpen(false);
+      setEditingClass(null);
       setClassForm({
         name: '',
         min_class_level: 5,
@@ -220,18 +235,23 @@ const Content = () => {
       });
       await loadAllData();
     } catch (error: any) {
-      setError('Sınıf oluşturulurken hata oluştu');
+      setError(editingClass ? 'Sınıf güncellenirken hata oluştu' : 'Sınıf oluşturulurken hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
-  // Ders oluşturma
+  // Ders oluşturma/güncelleme
   const handleCreateSubject = async () => {
     try {
       setLoading(true);
-      await contentService.createSubject(subjectForm);
+      if (editingSubject) {
+        await contentService.updateSubject(editingSubject.id, subjectForm);
+      } else {
+        await contentService.createSubject(subjectForm);
+      }
       setSubjectDialogOpen(false);
+      setEditingSubject(null);
       setSubjectForm({
         name: '',
         description: '',
@@ -242,7 +262,7 @@ const Content = () => {
       });
       await loadAllData();
     } catch (error: any) {
-      setError('Ders oluşturulurken hata oluştu');
+      setError(editingSubject ? 'Ders güncellenirken hata oluştu' : 'Ders oluşturulurken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -333,6 +353,74 @@ const Content = () => {
     }
   };
 
+  // Exam edit/delete handlers
+  const handleEditExam = (exam: Exam) => {
+    setEditingExam(exam);
+    setExamForm({
+      name: exam.name,
+      exam_date: exam.exam_date,
+      target_class_levels: exam.target_class_levels,
+      prep_class_levels: exam.prep_class_levels,
+      description: exam.description,
+      is_active: exam.is_active
+    });
+    setExamDialogOpen(true);
+  };
+
+  const handleDeleteExam = async (id: string) => {
+    try {
+      await contentService.deleteExam(id);
+      await loadAllData();
+    } catch (error: any) {
+      setError('Sınav silinirken hata oluştu');
+    }
+  };
+
+  // Class edit/delete handlers
+  const handleEditClass = (classItem: ClassType) => {
+    setEditingClass(classItem);
+    setClassForm({
+      name: classItem.name,
+      min_class_level: classItem.min_class_level,
+      max_class_level: classItem.max_class_level,
+      exam_id: '', // exam_id backend'de gerekli ama frontend'de exam_name geliyor
+      is_active: classItem.is_active
+    });
+    setClassDialogOpen(true);
+  };
+
+  const handleDeleteClass = async (id: string) => {
+    try {
+      await contentService.deleteClass(id);
+      await loadAllData();
+    } catch (error: any) {
+      setError('Sınıf silinirken hata oluştu');
+    }
+  };
+
+  // Subject edit/delete handlers
+  const handleEditSubject = (subject: Subject) => {
+    setEditingSubject(subject);
+    setSubjectForm({
+      name: subject.name,
+      description: '',
+      min_class_level: subject.min_class_level,
+      max_class_level: subject.max_class_level,
+      order_index: subject.order_index,
+      is_active: subject.is_active
+    });
+    setSubjectDialogOpen(true);
+  };
+
+  const handleDeleteSubject = async (id: string) => {
+    try {
+      await contentService.deleteSubject(id);
+      await loadAllData();
+    } catch (error: any) {
+      setError('Ders silinirken hata oluştu');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -416,6 +504,7 @@ const Content = () => {
                   <TableCell>Hedef Sınıflar</TableCell>
                   <TableCell>Hazırlık Sınıfları</TableCell>
                   <TableCell>Oluşturulma</TableCell>
+                  <TableCell>İşlemler</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -434,6 +523,14 @@ const Content = () => {
                       ))}
                     </TableCell>
                     <TableCell>{formatDate(exam.created_at)}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleEditExam(exam)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteExam(exam.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -462,6 +559,7 @@ const Content = () => {
                   <TableCell>Max Seviye</TableCell>
                   <TableCell>Bağlı Sınav</TableCell>
                   <TableCell>Oluşturulma</TableCell>
+                  <TableCell>İşlemler</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -472,6 +570,14 @@ const Content = () => {
                     <TableCell>{classItem.max_class_level}. Sınıf</TableCell>
                     <TableCell>{classItem.exam_name || '-'}</TableCell>
                     <TableCell>{formatDate(classItem.created_at)}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleEditClass(classItem)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteClass(classItem.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -500,6 +606,7 @@ const Content = () => {
                   <TableCell>Max Sınıf</TableCell>
                   <TableCell>Durum</TableCell>
                   <TableCell>Oluşturulma</TableCell>
+                  <TableCell>İşlemler</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -516,6 +623,14 @@ const Content = () => {
                       />
                     </TableCell>
                     <TableCell>{formatDate(subject.created_at)}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleEditSubject(subject)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteSubject(subject.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -580,8 +695,8 @@ const Content = () => {
       </Paper>
 
       {/* Sınav Oluşturma Dialog */}
-      <Dialog open={examDialogOpen} onClose={() => setExamDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Yeni Sınav Oluştur</DialogTitle>
+      <Dialog open={examDialogOpen} onClose={() => {setExamDialogOpen(false); setEditingExam(null);}} maxWidth="md" fullWidth>
+        <DialogTitle>{editingExam ? 'Sınav Düzenle' : 'Yeni Sınav Oluştur'}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
@@ -646,14 +761,14 @@ const Content = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setExamDialogOpen(false)}>İptal</Button>
-          <Button onClick={handleCreateExam} variant="contained">Oluştur</Button>
+          <Button onClick={() => {setExamDialogOpen(false); setEditingExam(null);}}>İptal</Button>
+          <Button onClick={handleCreateExam} variant="contained">{editingExam ? 'Güncelle' : 'Oluştur'}</Button>
         </DialogActions>
       </Dialog>
 
       {/* Sınıf Oluşturma Dialog */}
-      <Dialog open={classDialogOpen} onClose={() => setClassDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Yeni Sınıf Oluştur</DialogTitle>
+      <Dialog open={classDialogOpen} onClose={() => {setClassDialogOpen(false); setEditingClass(null);}} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingClass ? 'Sınıf Düzenle' : 'Yeni Sınıf Oluştur'}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
@@ -707,14 +822,14 @@ const Content = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setClassDialogOpen(false)}>İptal</Button>
-          <Button onClick={handleCreateClass} variant="contained">Oluştur</Button>
+          <Button onClick={() => {setClassDialogOpen(false); setEditingClass(null);}}>İptal</Button>
+          <Button onClick={handleCreateClass} variant="contained">{editingClass ? 'Güncelle' : 'Oluştur'}</Button>
         </DialogActions>
       </Dialog>
 
       {/* Ders Oluşturma Dialog */}
-      <Dialog open={subjectDialogOpen} onClose={() => setSubjectDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Yeni Ders Oluştur</DialogTitle>
+      <Dialog open={subjectDialogOpen} onClose={() => {setSubjectDialogOpen(false); setEditingSubject(null);}} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingSubject ? 'Ders Düzenle' : 'Yeni Ders Oluştur'}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
@@ -733,8 +848,8 @@ const Content = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSubjectDialogOpen(false)}>İptal</Button>
-          <Button onClick={handleCreateSubject} variant="contained">Oluştur</Button>
+          <Button onClick={() => {setSubjectDialogOpen(false); setEditingSubject(null);}}>İptal</Button>
+          <Button onClick={handleCreateSubject} variant="contained">{editingSubject ? 'Güncelle' : 'Oluştur'}</Button>
         </DialogActions>
       </Dialog>
 

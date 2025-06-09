@@ -217,6 +217,10 @@ const Questions: React.FC = () => {
 
   const handleEditQuestion = (question: Question) => {
     setSelectedQuestion(question);
+    // topic_name'e göre topic_id'yi bul
+    const topic = topics.find(t => t.name === question.topic_name);
+    const topicId = topic ? topic.id : '';
+    
     setQuestionForm({
       question_text: question.question_text,
       question_image_url: question.question_image_url || '',
@@ -226,7 +230,7 @@ const Questions: React.FC = () => {
       estimated_time: question.estimated_time,
       difficulty_level: question.difficulty_level,
       is_active: question.is_active,
-      topic_id: question.topic_id,
+      topic_id: topicId,
       answers: question.answers.map((answer, index) => ({
         option_letter: answer.option_letter,
         answer_text: answer.answer_text,
