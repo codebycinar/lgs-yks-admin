@@ -206,6 +206,8 @@ const Content: React.FC = () => {
       setSubjectForm({
         name: '',
         description: '',
+        min_class_level: 6,
+        max_class_level: 12,
         orderIndex: 0,
         isActive: true
       });
@@ -230,9 +232,7 @@ const Content: React.FC = () => {
         classId: '',
         parentId: undefined,
         orderIndex: 0,
-        isActive: true,
-        topicId: '',
-        difficultyLevel: 'medium'
+        isActive: true
       });
       await loadAllData();
     } catch (error: any) {
