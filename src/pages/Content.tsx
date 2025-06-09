@@ -356,9 +356,15 @@ const Content = () => {
   // Exam edit/delete handlers
   const handleEditExam = (exam: Exam) => {
     setEditingExam(exam);
+    // Tarih formatını HTML date input için uygun hale getir (YYYY-MM-DD)
+    const formatDateForInput = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    };
+    
     setExamForm({
       name: exam.name,
-      exam_date: exam.exam_date,
+      exam_date: formatDateForInput(exam.exam_date),
       target_class_levels: exam.target_class_levels,
       prep_class_levels: exam.prep_class_levels,
       description: exam.description,
@@ -379,11 +385,15 @@ const Content = () => {
   // Class edit/delete handlers
   const handleEditClass = (classItem: ClassType) => {
     setEditingClass(classItem);
+    // exam_name'e göre exam_id'yi bul
+    const exam = exams.find(e => e.name === classItem.exam_name);
+    const examId = exam ? exam.id : '';
+    
     setClassForm({
       name: classItem.name,
       min_class_level: classItem.min_class_level,
       max_class_level: classItem.max_class_level,
-      exam_id: '', // exam_id backend'de gerekli ama frontend'de exam_name geliyor
+      exam_id: examId,
       is_active: classItem.is_active
     });
     setClassDialogOpen(true);

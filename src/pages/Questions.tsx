@@ -134,15 +134,26 @@ const Questions: React.FC = () => {
   const handleCreateQuestion = async () => {
     try {
       setError('');
-      const createData: CreateQuestionData = {
-        ...questionForm,
-        question_image_url: questionForm.question_image_url || undefined,
+      // Backend'in beklediği format için field name'leri dönüştür
+      const createData = {
+        questionText: questionForm.question_text,
+        questionImageUrl: questionForm.question_image_url || undefined,
+        solutionText: questionForm.solution_text,
+        hasMultipleCorrect: questionForm.has_multiple_correct,
+        explanation: questionForm.explanation,
+        estimatedTime: questionForm.estimated_time,
+        difficultyLevel: questionForm.difficulty_level,
+        isActive: questionForm.is_active,
+        topicId: questionForm.topic_id,
         answers: questionForm.answers.map(answer => ({
-          ...answer,
-          answer_image_url: answer.answer_image_url || undefined
+          optionLetter: answer.option_letter,
+          answerText: answer.answer_text,
+          answerImageUrl: answer.answer_image_url || undefined,
+          isCorrect: answer.is_correct,
+          orderIndex: answer.order_index
         }))
       };
-      await questionsService.createQuestion(createData);
+      await questionsService.createQuestion(createData as any);
       setCreateDialogOpen(false);
       resetForm();
       loadQuestions();
@@ -157,17 +168,28 @@ const Questions: React.FC = () => {
       setError('');
       if (!selectedQuestion) return;
 
-      const updateData: UpdateQuestionData = {
-        ...questionForm,
+      // Backend'in beklediği format için field name'leri dönüştür
+      const updateData = {
         id: selectedQuestion.id,
-        question_image_url: questionForm.question_image_url || undefined,
+        questionText: questionForm.question_text,
+        questionImageUrl: questionForm.question_image_url || undefined,
+        solutionText: questionForm.solution_text,
+        hasMultipleCorrect: questionForm.has_multiple_correct,
+        explanation: questionForm.explanation,
+        estimatedTime: questionForm.estimated_time,
+        difficultyLevel: questionForm.difficulty_level,
+        isActive: questionForm.is_active,
+        topicId: questionForm.topic_id,
         answers: questionForm.answers.map(answer => ({
-          ...answer,
-          answer_image_url: answer.answer_image_url || undefined
+          optionLetter: answer.option_letter,
+          answerText: answer.answer_text,
+          answerImageUrl: answer.answer_image_url || undefined,
+          isCorrect: answer.is_correct,
+          orderIndex: answer.order_index
         }))
       };
 
-      await questionsService.updateQuestion(updateData);
+      await questionsService.updateQuestion(updateData as any);
       setEditDialogOpen(false);
       resetForm();
       loadQuestions();
