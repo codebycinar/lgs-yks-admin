@@ -257,7 +257,7 @@ const Content: React.FC = () => {
     const selectedTopicId = event.target.value;
     setTopicForm(prev => ({
       ...prev,
-      topicId: selectedTopicId
+      parentId: selectedTopicId
     }));
   };
 
@@ -709,7 +709,7 @@ const Content: React.FC = () => {
             <FormControl fullWidth>
               <InputLabel>Konu</InputLabel>
               <Select
-                value={topicForm.topicId || ''}
+                value={topicForm.parentId || ''}
                 onChange={handleTopicChange}
                 label="Konu"
                 inputProps={{ 'aria-label': 'Konu seçimi' }}
