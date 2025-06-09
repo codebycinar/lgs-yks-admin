@@ -1,5 +1,13 @@
 import api from '../config/api';
 
+export interface QuestionAnswer {
+  id?: number;
+  answerText?: string;
+  answerImageUrl?: string;
+  isCorrect: boolean;
+  orderIndex: number;
+}
+
 export interface Question {
   id: number;
   topic_id: number;
@@ -13,7 +21,7 @@ export interface Question {
   solution_text?: string;
   solution_image_url?: string;
   solution_pdf_url?: string;
-  correct_answers: string[];
+  answers?: QuestionAnswer[];
   explanation?: string;
   keywords: string[];
   estimated_time?: number;
@@ -30,7 +38,7 @@ export interface CreateQuestionData {
   solutionText?: string;
   solutionImageUrl?: string;
   solutionPdfUrl?: string;
-  correctAnswers: string[];
+  answers?: QuestionAnswer[];
   explanation?: string;
   keywords: string[];
   estimatedTime?: number;

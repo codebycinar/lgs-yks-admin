@@ -48,6 +48,7 @@ import {
 } from '@mui/icons-material';
 import questionsService, { 
   Question, 
+  QuestionAnswer,
   CreateQuestionData,
   GetQuestionsParams
 } from '../services/questions';
@@ -86,7 +87,7 @@ const Questions: React.FC = () => {
     solutionText: '',
     solutionImageUrl: '',
     solutionPdfUrl: '',
-    correctAnswers: [''],
+    answers: [{ answerText: '', answerImageUrl: '', isCorrect: false, orderIndex: 0 }],
     explanation: '',
     keywords: [],
     estimatedTime: 0
@@ -222,7 +223,7 @@ const Questions: React.FC = () => {
       solutionText: '',
       solutionImageUrl: '',
       solutionPdfUrl: '',
-      correctAnswers: [''],
+      answers: [{ answerText: '', answerImageUrl: '', isCorrect: false, orderIndex: 0 }],
       explanation: '',
       keywords: [],
       estimatedTime: 0
@@ -240,7 +241,7 @@ const Questions: React.FC = () => {
       solutionText: question.solution_text || '',
       solutionImageUrl: question.solution_image_url || '',
       solutionPdfUrl: question.solution_pdf_url || '',
-      correctAnswers: question.correct_answers,
+      answers: question.answers || [{ answerText: '', answerImageUrl: '', isCorrect: false, orderIndex: 0 }],
       explanation: question.explanation || '',
       keywords: question.keywords,
       estimatedTime: question.estimated_time || 0
@@ -262,24 +263,31 @@ const Questions: React.FC = () => {
     setPage(0);
   };
 
-  const addCorrectAnswer = () => {
+  const addAnswer = () => {
     setForm(prev => ({
       ...prev,
-      correctAnswers: [...prev.correctAnswers, '']
+      answers: [...(prev.answers || []), { 
+        answerText: '', 
+        answerImageUrl: '', 
+        isCorrect: false, 
+        orderIndex: (prev.answers?.length || 0)
+      }]
     }));
   };
 
-  const updateCorrectAnswer = (index: number, value: string) => {
+  const updateAnswer = (index: number, field: keyof QuestionAnswer, value: any) => {
     setForm(prev => ({
       ...prev,
-      correctAnswers: prev.correctAnswers.map((answer, i) => i === index ? value : answer)
+      answers: prev.answers?.map((answer, i) => 
+        i === index ? { ...answer, [field]: value } : answer
+      ) || []
     }));
   };
 
-  const removeCorrectAnswer = (index: number) => {
+  const removeAnswer = (index: number) => {
     setForm(prev => ({
       ...prev,
-      correctAnswers: prev.correctAnswers.filter((_, i) => i !== index)
+      answers: prev.answers?.filter((_, i) => i !== index) || []
     }));
   };
 
@@ -599,26 +607,48 @@ const Questions: React.FC = () => {
               </Box>
             </Box>
 
-            {/* Doğru Cevaplar */}
+            {/* Cevaplar */}
             <Box>
-              <Typography variant="h6" gutterBottom>Doğru Cevaplar</Typography>
-              {form.correctAnswers.map((answer, index) => (
-                <Box key={index} display="flex" alignItems="center" gap={1} mb={1}>
-                  <TextField
-                    fullWidth
-                    label={`Cevap ${index + 1}`}
-                    value={answer}
-                    onChange={(e) => updateCorrectAnswer(index, e.target.value)}
-                  />
-                  <IconButton 
-                    onClick={() => removeCorrectAnswer(index)}
-                    disabled={form.correctAnswers.length === 1}
-                  >
-                    <Close />
-                  </IconButton>
-                </Box>
+              <Typography variant="h6" gutterBottom>Cevaplar</Typography>
+              {form.answers?.map((answer, index) => (
+                <Card key={index} variant="outlined" sx={{ mb: 2, p: 2 }}>
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <TextField
+                        fullWidth
+                        label={`Cevap ${index + 1}`}
+                        value={answer.answerText || ''}
+                        onChange={(e) => updateAnswer(index, 'answerText', e.target.value)}
+                      />
+                      <FormControl>
+                        <InputLabel>Doğru?</InputLabel>
+                        <Select
+                          value={answer.isCorrect}
+                          onChange={(e) => updateAnswer(index, 'isCorrect', e.target.value)}
+                          sx={{ minWidth: 100 }}
+                        >
+                          <MenuItem value={true}>Evet</MenuItem>
+                          <MenuItem value={false}>Hayır</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <IconButton 
+                        onClick={() => removeAnswer(index)}
+                        disabled={(form.answers?.length || 0) === 1}
+                        color="error"
+                      >
+                        <Close />
+                      </IconButton>
+                    </Box>
+                    <TextField
+                      fullWidth
+                      label="Cevap Görsel URL (opsiyonel)"
+                      value={answer.answerImageUrl || ''}
+                      onChange={(e) => updateAnswer(index, 'answerImageUrl', e.target.value)}
+                    />
+                  </Box>
+                </Card>
               ))}
-              <Button onClick={addCorrectAnswer} variant="outlined" size="small">
+              <Button onClick={addAnswer} variant="outlined" size="small">
                 Cevap Ekle
               </Button>
             </Box>
@@ -694,16 +724,24 @@ const Questions: React.FC = () => {
                 </Box>
               )}
 
-              <Box>
-                <Typography variant="subtitle2">Doğru Cevaplar:</Typography>
-                <List dense>
-                  {selectedQuestion.correct_answers.map((answer, index) => (
-                    <ListItem key={index}>
-                      <ListItemText primary={`${index + 1}. ${answer}`} />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
+              {selectedQuestion.answers && selectedQuestion.answers.length > 0 && (
+                <Box>
+                  <Typography variant="subtitle2">Cevaplar:</Typography>
+                  <List dense>
+                    {selectedQuestion.answers.map((answer, index) => (
+                      <ListItem key={index}>
+                        <ListItemText 
+                          primary={`${index + 1}. ${answer.answerText}`}
+                          secondary={answer.isCorrect ? 'Doğru cevap' : 'Yanlış cevap'}
+                        />
+                        {answer.isCorrect && (
+                          <Chip label="Doğru" color="success" size="small" sx={{ ml: 1 }} />
+                        )}
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
 
               {selectedQuestion.explanation && (
                 <Box>
