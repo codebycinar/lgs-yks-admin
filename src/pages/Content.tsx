@@ -157,7 +157,7 @@ const Content = () => {
         }),
         contentService.getTopics().catch(error => {
           console.error('Topics loading error:', error);
-          return [];
+          return { topics: [], pagination: { totalTopics: 0, totalPages: 0, currentPage: 1, limit: 10 } };
         })
       ]);
 
@@ -165,10 +165,10 @@ const Content = () => {
       setExams(examsData);
       setClasses(classesData);
       setSubjects(subjectsData);
-      setTopics(topicsData);
+      setTopics(topicsData.topics || []);
 
       // Eğer hiç veri yüklenemezse hata göster
-      if (!examsData.length && !classesData.length && !subjectsData.length && !topicsData.length) {
+      if (!examsData.length && !classesData.length && !subjectsData.length && !topicsData.topics?.length) {
         setError('Veriler yüklenemedi. Lütfen sayfayı yenileyin.');
       }
     } catch (error: any) {
