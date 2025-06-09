@@ -1,69 +1,69 @@
-import api from '../config/api';
+import api from './api';
 
 export interface QuestionAnswer {
-  id?: number;
-  answerText?: string;
-  answerImageUrl?: string;
-  isCorrect: boolean;
-  orderIndex: number;
+  id: string;
+  option_letter: string;
+  answer_text: string;
+  answer_image_url?: string;
+  is_correct: boolean;
+  order_index: number;
 }
 
 export interface Question {
-  id: number;
-  topic_id: number;
-  topic_name?: string;
-  subject_name?: string;
-  class_name?: string;
-  difficulty_level: 'easy' | 'medium' | 'hard';
-  question_text?: string;
+  id: string;
+  question_text: string;
   question_image_url?: string;
-  question_pdf_url?: string;
-  solution_text?: string;
-  solution_image_url?: string;
-  solution_pdf_url?: string;
-  answers?: QuestionAnswer[];
+  solution_text: string;
+  has_multiple_correct: boolean;
   explanation?: string;
-  keywords: string[];
-  estimated_time?: number;
+  estimated_time: number;
+  difficulty_level: number;
   is_active: boolean;
   created_at: string;
+  topic_name: string;
+  subject_name: string;
+  class_name: string;
+  answers: QuestionAnswer[];
 }
 
 export interface CreateQuestionData {
-  topicId: number;
-  difficultyLevel: 'easy' | 'medium' | 'hard';
-  questionText?: string;
-  questionImageUrl?: string;
-  questionPdfUrl?: string;
-  solutionText?: string;
-  solutionImageUrl?: string;
-  solutionPdfUrl?: string;
-  answers?: QuestionAnswer[];
+  question_text: string;
+  question_image_url?: string;
+  solution_text: string;
+  has_multiple_correct: boolean;
   explanation?: string;
-  keywords: string[];
-  estimatedTime?: number;
+  estimated_time: number;
+  difficulty_level: number;
+  is_active: boolean;
+  topic_id: string;
+  answers: {
+    option_letter: string;
+    answer_text: string;
+    answer_image_url?: string;
+    is_correct: boolean;
+    order_index: number;
+  }[];
 }
 
 export interface UpdateQuestionData extends CreateQuestionData {
-  id: number;
+  id: string;
 }
 
 export interface GetQuestionsParams {
-  page?: number;
-  limit?: number;
-  topicId?: number;
-  difficultyLevel?: string;
+  page: number;
+  limit: number;
+  topic_id?: string;
+  difficulty_level?: number;
   search?: string;
 }
 
 export interface QuestionsResponse {
   questions: Question[];
   pagination: {
-    currentPage: number;
-    totalPages: number;
     totalQuestions: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+    totalPages: number;
+    currentPage: number;
+    limit: number;
   };
 }
 
@@ -74,33 +74,27 @@ export interface FileUploadResponse {
   solutionPdfUrl?: string;
 }
 
-class QuestionsService {
-  // Soruları listele
-  async getQuestions(params: GetQuestionsParams = {}): Promise<QuestionsResponse> {
-    const response = await api.get('/admin/questions', { params });
-    return response.data.data;
-  }
+const questionsService = {
+  getQuestions: async (params: GetQuestionsParams): Promise<QuestionsResponse> => {
+    const response = await api.get('/questions', { params });
+    return response.data;
+  },
 
-  // Soru oluştur
-  async createQuestion(data: CreateQuestionData): Promise<Question> {
-    const response = await api.post('/admin/questions', data);
-    return response.data.data;
-  }
+  createQuestion: async (data: CreateQuestionData): Promise<Question> => {
+    const response = await api.post('/questions', data);
+    return response.data;
+  },
 
-  // Soru güncelle
-  async updateQuestion(data: UpdateQuestionData): Promise<Question> {
-    const { id, ...updateData } = data;
-    const response = await api.put(`/admin/questions/${id}`, updateData);
-    return response.data.data;
-  }
+  updateQuestion: async (data: UpdateQuestionData): Promise<Question> => {
+    const response = await api.put(`/questions/${data.id}`, data);
+    return response.data;
+  },
 
-  // Soru sil
-  async deleteQuestion(id: number): Promise<void> {
-    await api.delete(`/admin/questions/${id}`);
-  }
+  deleteQuestion: async (id: string): Promise<void> => {
+    await api.delete(`/questions/${id}`);
+  },
 
-  // Dosya yükle
-  async uploadFiles(files: FormData): Promise<FileUploadResponse> {
+  uploadFiles: async (files: FormData): Promise<FileUploadResponse> => {
     const response = await api.post('/upload/question-files', files, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -108,6 +102,6 @@ class QuestionsService {
     });
     return response.data.data;
   }
-}
+};
 
-export default new QuestionsService();
+export default questionsService;

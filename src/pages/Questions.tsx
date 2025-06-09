@@ -1,133 +1,126 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Typography,
-  Paper,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  IconButton,
+  Typography,
+  Grid,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
+  TablePagination,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   CircularProgress,
   Alert,
-  Grid,
-  IconButton,
-  Card,
-  CardContent,
-  CardActions,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  Fab,
-  InputAdornment
+  SelectChangeEvent
 } from '@mui/material';
 import {
-  Add,
-  Edit,
-  Delete,
-  Search,
-  CloudUpload,
-  Image,
-  PictureAsPdf,
-  Visibility,
-  Close
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon
 } from '@mui/icons-material';
-import questionsService, { 
-  Question, 
+import questionsService, {
+  Question,
   QuestionAnswer,
   CreateQuestionData,
-  GetQuestionsParams
+  GetQuestionsParams,
+  UpdateQuestionData
 } from '../services/questions';
 import contentService, { Subject, Topic } from '../services/content';
 
+interface QuestionFormState extends Omit<CreateQuestionData, 'answers'> {
+  answers: {
+    option_letter: string;
+    answer_text: string;
+    answer_image_url?: string;
+    is_correct: boolean;
+    order_index: number;
+  }[];
+}
+
 const Questions: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Pagination
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalQuestions, setTotalQuestions] = useState(0);
-
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTopic, setSelectedTopic] = useState<number>(0);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
-
-  // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
-
-  // Form state
-  const [form, setForm] = useState<CreateQuestionData>({
-    topicId: 0,
-    difficultyLevel: 'medium',
-    questionText: '',
-    questionImageUrl: '',
-    questionPdfUrl: '',
-    solutionText: '',
-    solutionImageUrl: '',
-    solutionPdfUrl: '',
-    answers: [{ answerText: '', answerImageUrl: '', isCorrect: false, orderIndex: 0 }],
-    explanation: '',
-    keywords: [],
-    estimatedTime: 0
-  });
-
+  const [currentPage, setCurrentPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [uploadLoading, setUploadLoading] = useState(false);
 
-  const fetchQuestions = useCallback(async () => {
+  const [questionForm, setQuestionForm] = useState<QuestionFormState>({
+    question_text: '',
+    question_image_url: '',
+    solution_text: '',
+    has_multiple_correct: false,
+    explanation: '',
+    estimated_time: 0,
+    difficulty_level: 1,
+    is_active: true,
+    topic_id: '',
+    answers: [
+      { option_letter: 'A', answer_text: '', is_correct: false, order_index: 0 },
+      { option_letter: 'B', answer_text: '', is_correct: false, order_index: 1 },
+      { option_letter: 'C', answer_text: '', is_correct: false, order_index: 2 },
+      { option_letter: 'D', answer_text: '', is_correct: false, order_index: 3 },
+      { option_letter: 'E', answer_text: '', is_correct: false, order_index: 4 }
+    ]
+  });
+
+  const loadQuestions = async () => {
     try {
       setLoading(true);
       const params: GetQuestionsParams = {
-        page: page + 1,
+        page: currentPage + 1,
         limit: rowsPerPage,
+        topic_id: selectedTopic,
+        difficulty_level: selectedDifficulty ? Number(selectedDifficulty) : undefined,
+        search: searchQuery
       };
-
-      if (searchQuery.trim()) params.search = searchQuery.trim();
-      if (selectedTopic) params.topicId = selectedTopic;
-      if (selectedDifficulty) params.difficultyLevel = selectedDifficulty;
-
       const response = await questionsService.getQuestions(params);
       setQuestions(response.questions);
       setTotalQuestions(response.pagination.totalQuestions);
-    } catch (error: any) {
-      setError('Sorular yüklenirken hata oluştu');
-      console.error('Questions loading error:', error);
+    } catch (err) {
+      setError('Sorular yüklenirken bir hata oluştu');
+      console.error('Soru yükleme hatası:', err);
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, searchQuery, selectedTopic, selectedDifficulty]);
+  };
 
   const loadInitialData = async () => {
     try {
-      const [subjectsData, topicsData] = await Promise.all([
-        contentService.getSubjects(),
-        contentService.getTopics()
+      const [topicsResponse, subjectsResponse] = await Promise.all([
+        contentService.getTopics(),
+        contentService.getSubjects()
       ]);
-      setSubjects(subjectsData);
-      setTopics(topicsData);
-    } catch (error: any) {
-      setError('Başlangıç verileri yüklenirken hata oluştu');
+      setTopics(topicsResponse.topics);
+      setSubjects(subjectsResponse);
+    } catch (err) {
+      setError('Veriler yüklenirken bir hata oluştu');
+      console.error('Veri yükleme hatası:', err);
     }
   };
 
@@ -136,190 +129,197 @@ const Questions: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
+    loadQuestions();
+  }, [currentPage, rowsPerPage, searchQuery, selectedTopic, selectedDifficulty]);
 
   const handleCreateQuestion = async () => {
     try {
-      setLoading(true);
-      await questionsService.createQuestion(form);
+      setError('');
+      const createData: CreateQuestionData = {
+        ...questionForm,
+        question_image_url: questionForm.question_image_url || undefined,
+        answers: questionForm.answers.map(answer => ({
+          ...answer,
+          answer_image_url: answer.answer_image_url || undefined
+        }))
+      };
+      await questionsService.createQuestion(createData);
       setCreateDialogOpen(false);
       resetForm();
-      await fetchQuestions();
-    } catch (error: any) {
-      setError('Soru oluşturulurken hata oluştu');
-    } finally {
-      setLoading(false);
+      loadQuestions();
+    } catch (err) {
+      setError('Soru oluşturulurken bir hata oluştu');
+      console.error('Soru oluşturma hatası:', err);
     }
   };
 
   const handleUpdateQuestion = async () => {
-    if (!selectedQuestion) return;
-    
     try {
-      setLoading(true);
-      await questionsService.updateQuestion({
-        ...form,
-        id: selectedQuestion.id
-      });
+      setError('');
+      if (!selectedQuestion) return;
+
+      const updateData: UpdateQuestionData = {
+        ...questionForm,
+        id: selectedQuestion.id,
+        question_image_url: questionForm.question_image_url || undefined,
+        answers: questionForm.answers.map(answer => ({
+          ...answer,
+          answer_image_url: answer.answer_image_url || undefined
+        }))
+      };
+
+      await questionsService.updateQuestion(updateData);
       setEditDialogOpen(false);
       resetForm();
-      await fetchQuestions();
-    } catch (error: any) {
-      setError('Soru güncellenirken hata oluştu');
-    } finally {
-      setLoading(false);
+      loadQuestions();
+    } catch (err) {
+      setError('Soru güncellenirken bir hata oluştu');
+      console.error('Soru güncelleme hatası:', err);
     }
   };
 
-  const handleDeleteQuestion = async (id: number) => {
+  const handleDeleteQuestion = async (id: string) => {
     if (!window.confirm('Bu soruyu silmek istediğinize emin misiniz?')) return;
-
     try {
-      setLoading(true);
+      setError('');
       await questionsService.deleteQuestion(id);
-      await fetchQuestions();
-    } catch (error: any) {
-      setError('Soru silinirken hata oluştu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (files: FileList | null, fileType: string) => {
-    if (!files || files.length === 0) return;
-
-    const formData = new FormData();
-    formData.append(fileType, files[0]);
-
-    try {
-      setUploadLoading(true);
-      const response = await questionsService.uploadFiles(formData);
-      
-      // Form'u güncelle
-      if (fileType === 'questionImage' && response.questionImageUrl) {
-        setForm(prev => ({ ...prev, questionImageUrl: response.questionImageUrl! }));
-      } else if (fileType === 'questionPdf' && response.questionPdfUrl) {
-        setForm(prev => ({ ...prev, questionPdfUrl: response.questionPdfUrl! }));
-      } else if (fileType === 'solutionImage' && response.solutionImageUrl) {
-        setForm(prev => ({ ...prev, solutionImageUrl: response.solutionImageUrl! }));
-      } else if (fileType === 'solutionPdf' && response.solutionPdfUrl) {
-        setForm(prev => ({ ...prev, solutionPdfUrl: response.solutionPdfUrl! }));
-      }
-    } catch (error: any) {
-      setError('Dosya yüklenirken hata oluştu');
-    } finally {
-      setUploadLoading(false);
+      loadQuestions();
+    } catch (err) {
+      setError('Soru silinirken bir hata oluştu');
+      console.error('Soru silme hatası:', err);
     }
   };
 
   const resetForm = () => {
-    setForm({
-      topicId: 0,
-      difficultyLevel: 'medium',
-      questionText: '',
-      questionImageUrl: '',
-      questionPdfUrl: '',
-      solutionText: '',
-      solutionImageUrl: '',
-      solutionPdfUrl: '',
-      answers: [{ answerText: '', answerImageUrl: '', isCorrect: false, orderIndex: 0 }],
+    setQuestionForm({
+      question_text: '',
+      question_image_url: '',
+      solution_text: '',
+      has_multiple_correct: false,
       explanation: '',
-      keywords: [],
-      estimatedTime: 0
+      estimated_time: 0,
+      difficulty_level: 1,
+      is_active: true,
+      topic_id: '',
+      answers: [
+        { option_letter: 'A', answer_text: '', is_correct: false, order_index: 0 },
+        { option_letter: 'B', answer_text: '', is_correct: false, order_index: 1 },
+        { option_letter: 'C', answer_text: '', is_correct: false, order_index: 2 },
+        { option_letter: 'D', answer_text: '', is_correct: false, order_index: 3 },
+        { option_letter: 'E', answer_text: '', is_correct: false, order_index: 4 }
+      ]
     });
   };
 
-  const openEditDialog = (question: Question) => {
-    setSelectedQuestion(question);
-    setForm({
-      topicId: question.topic_id,
-      difficultyLevel: question.difficulty_level,
-      questionText: question.question_text || '',
-      questionImageUrl: question.question_image_url || '',
-      questionPdfUrl: question.question_pdf_url || '',
-      solutionText: question.solution_text || '',
-      solutionImageUrl: question.solution_image_url || '',
-      solutionPdfUrl: question.solution_pdf_url || '',
-      answers: question.answers || [{ answerText: '', answerImageUrl: '', isCorrect: false, orderIndex: 0 }],
-      explanation: question.explanation || '',
-      keywords: question.keywords,
-      estimatedTime: question.estimated_time || 0
-    });
-    setEditDialogOpen(true);
-  };
-
-  const openViewDialog = (question: Question) => {
+  const handleViewQuestion = (question: Question) => {
     setSelectedQuestion(question);
     setViewDialogOpen(true);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
+  const handleEditQuestion = (question: Question) => {
+    setSelectedQuestion(question);
+    setQuestionForm({
+      question_text: question.question_text,
+      question_image_url: question.question_image_url || '',
+      solution_text: question.solution_text,
+      has_multiple_correct: question.has_multiple_correct,
+      explanation: question.explanation || '',
+      estimated_time: question.estimated_time,
+      difficulty_level: question.difficulty_level,
+      is_active: question.is_active,
+      topic_id: question.id,
+      answers: question.answers.map((answer, index) => ({
+        option_letter: answer.option_letter,
+        answer_text: answer.answer_text,
+        answer_image_url: answer.answer_image_url || '',
+        is_correct: answer.is_correct,
+        order_index: index
+      }))
+    });
+    setEditDialogOpen(true);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePageChange = (event: unknown, newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    setCurrentPage(0);
   };
 
-  const addAnswer = () => {
-    setForm(prev => ({
-      ...prev,
-      answers: [...(prev.answers || []), { 
-        answerText: '', 
-        answerImageUrl: '', 
-        isCorrect: false, 
-        orderIndex: (prev.answers?.length || 0)
-      }]
-    }));
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+    setCurrentPage(0);
   };
 
-  const updateAnswer = (index: number, field: keyof QuestionAnswer, value: any) => {
-    setForm(prev => ({
+  const handleTopicChange = (event: SelectChangeEvent<string>) => {
+    setSelectedTopic(event.target.value);
+    setCurrentPage(0);
+  };
+
+  const handleDifficultyChange = (event: SelectChangeEvent<string>) => {
+    setSelectedDifficulty(event.target.value);
+    setCurrentPage(0);
+  };
+
+  const handleFormChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const { name, value } = event.target;
+    if (name) {
+      setQuestionForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleStringSelectChange = (event: SelectChangeEvent<string>) => {
+    const { name, value } = event.target;
+    if (name) {
+      setQuestionForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleNumberSelectChange = (event: SelectChangeEvent<number>) => {
+    const { name, value } = event.target;
+    if (name) {
+      setQuestionForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleBooleanSelectChange = (event: SelectChangeEvent<boolean>) => {
+    const { name, value } = event.target;
+    if (name) {
+      setQuestionForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleAnswerChange = (index: number, field: string, value: string | boolean) => {
+    setQuestionForm(prev => ({
       ...prev,
-      answers: prev.answers?.map((answer, i) => 
+      answers: prev.answers.map((answer, i) =>
         i === index ? { ...answer, [field]: value } : answer
-      ) || []
+      )
     }));
-  };
-
-  const removeAnswer = (index: number) => {
-    setForm(prev => ({
-      ...prev,
-      answers: prev.answers?.filter((_, i) => i !== index) || []
-    }));
-  };
-
-  const getDifficultyColor = (level: string) => {
-    switch (level) {
-      case 'easy': return 'success';
-      case 'medium': return 'warning';
-      case 'hard': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const getDifficultyLabel = (level: string) => {
-    switch (level) {
-      case 'easy': return 'Kolay';
-      case 'medium': return 'Orta';
-      case 'hard': return 'Zor';
-      default: return level;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('tr-TR');
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Soru Havuzu Yönetimi</Typography>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h4">Sorular</Typography>
         <Button
           variant="contained"
-          startIcon={<Add />}
+          color="primary"
+          startIcon={<AddIcon />}
           onClick={() => setCreateDialogOpen(true)}
         >
           Yeni Soru
@@ -327,437 +327,474 @@ const Questions: React.FC = () => {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
           <TextField
-            sx={{ flex: 1, minWidth: 200 }}
-            placeholder="Soru ara..."
+            fullWidth
+            label="Soru Ara"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
+            onChange={handleSearchChange}
           />
-          <FormControl sx={{ flex: 1, minWidth: 200 }}>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth>
             <InputLabel>Konu</InputLabel>
             <Select
               value={selectedTopic}
-              onChange={(e) => setSelectedTopic(Number(e.target.value))}
+              onChange={handleTopicChange}
+              label="Konu"
             >
-              <MenuItem value={0}>Tüm Konular</MenuItem>
+              <MenuItem value="">Tümü</MenuItem>
               {topics.map(topic => (
                 <MenuItem key={topic.id} value={topic.id}>
-                  {topic.subject_name} - {topic.class_name} - {topic.name}
+                  {topic.name}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-          <FormControl sx={{ flex: 1, minWidth: 200 }}>
-            <InputLabel>Zorluk</InputLabel>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <FormControl fullWidth>
+            <InputLabel>Zorluk Seviyesi</InputLabel>
             <Select
               value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
+              onChange={handleDifficultyChange}
+              label="Zorluk Seviyesi"
             >
-              <MenuItem value="">Tüm Seviyeler</MenuItem>
-              <MenuItem value="easy">Kolay</MenuItem>
-              <MenuItem value="medium">Orta</MenuItem>
-              <MenuItem value="hard">Zor</MenuItem>
+              <MenuItem value="">Tümü</MenuItem>
+              <MenuItem value="1">Kolay</MenuItem>
+              <MenuItem value="2">Orta</MenuItem>
+              <MenuItem value="3">Zor</MenuItem>
             </Select>
           </FormControl>
-        </Box>
-      </Paper>
+        </Grid>
+      </Grid>
 
-      {/* Questions Table */}
-      <Paper>
-        <TableContainer>
-          <Table>
-            <TableHead>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Soru</TableCell>
+              <TableCell>Konu</TableCell>
+              <TableCell>Zorluk</TableCell>
+              <TableCell>Durum</TableCell>
+              <TableCell>İşlemler</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableCell>Konu</TableCell>
-                <TableCell>Zorluk</TableCell>
-                <TableCell>Soru Metni</TableCell>
-                <TableCell>Dosyalar</TableCell>
-                <TableCell>Durum</TableCell>
-                <TableCell>Oluşturulma</TableCell>
-                <TableCell align="center">İşlemler</TableCell>
+                <TableCell colSpan={5} align="center">
+                  <CircularProgress />
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    <CircularProgress />
+            ) : questions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  Soru bulunamadı
+                </TableCell>
+              </TableRow>
+            ) : (
+              questions.map(question => (
+                <TableRow key={question.id}>
+                  <TableCell>{question.question_text}</TableCell>
+                  <TableCell>{question.topic_name}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={
+                        question.difficulty_level === 1
+                          ? 'Kolay'
+                          : question.difficulty_level === 2
+                          ? 'Orta'
+                          : 'Zor'
+                      }
+                      color={
+                        question.difficulty_level === 1
+                          ? 'success'
+                          : question.difficulty_level === 2
+                          ? 'warning'
+                          : 'error'
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={question.is_active ? 'Aktif' : 'Pasif'}
+                      color={question.is_active ? 'success' : 'default'}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleViewQuestion(question)}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleEditQuestion(question)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDeleteQuestion(question.id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
-              ) : questions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    Soru bulunamadı
-                  </TableCell>
-                </TableRow>
-              ) : (
-                questions.map((question) => (
-                  <TableRow key={question.id} hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="bold">
-                        {question.subject_name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {question.class_name} - {question.topic_name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={getDifficultyLabel(question.difficulty_level)}
-                        color={getDifficultyColor(question.difficulty_level)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                        {question.question_text || 'Sadece görsel/PDF'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={0.5}>
-                        {question.question_image_url && <Image fontSize="small" color="primary" />}
-                        {question.question_pdf_url && <PictureAsPdf fontSize="small" color="secondary" />}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={question.is_active ? 'Aktif' : 'Pasif'}
-                        color={question.is_active ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{formatDate(question.created_at)}</TableCell>
-                    <TableCell align="center">
-                      <IconButton onClick={() => openViewDialog(question)} color="info">
-                        <Visibility />
-                      </IconButton>
-                      <IconButton onClick={() => openEditDialog(question)} color="primary">
-                        <Edit />
-                      </IconButton>
-                      <IconButton onClick={() => handleDeleteQuestion(question.id)} color="error">
-                        <Delete />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
+              ))
+            )}
+          </TableBody>
+        </Table>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
           count={totalQuestions}
+          page={currentPage}
+          onPageChange={handlePageChange}
           rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Sayfa başına satır:"
-          labelDisplayedRows={({ from, to, count }) => 
-            `${from}-${to} / ${count !== -1 ? count : `${to}'den fazla`}`
-          }
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rowsPerPageOptions={[5, 10, 25, 50]}
         />
-      </Paper>
+      </TableContainer>
 
-      {/* Create/Edit Question Dialog */}
-      <Dialog 
-        open={createDialogOpen || editDialogOpen} 
-        onClose={() => {
-          setCreateDialogOpen(false);
-          setEditDialogOpen(false);
-          resetForm();
-        }}
-        maxWidth="lg" 
+      {/* Create Dialog */}
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
-          {editDialogOpen ? 'Soru Düzenle' : 'Yeni Soru Oluştur'}
-        </DialogTitle>
+        <DialogTitle>Yeni Soru Oluştur</DialogTitle>
         <DialogContent>
-          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Temel Bilgiler */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <FormControl sx={{ flex: 1, minWidth: 200 }}>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Soru Metni"
+                name="question_text"
+                value={questionForm.question_text}
+                onChange={handleFormChange}
+                multiline
+                rows={4}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Çözüm"
+                name="solution_text"
+                value={questionForm.solution_text}
+                onChange={handleFormChange}
+                multiline
+                rows={4}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
                 <InputLabel>Konu</InputLabel>
                 <Select
-                  value={form.topicId}
-                  onChange={(e) => setForm(prev => ({ ...prev, topicId: Number(e.target.value) }))}
+                  name="topic_id"
+                  value={questionForm.topic_id}
+                  onChange={handleStringSelectChange}
+                  label="Konu"
                 >
                   {topics.map(topic => (
                     <MenuItem key={topic.id} value={topic.id}>
-                      {topic.subject_name} - {topic.class_name} - {topic.name}
+                      {topic.name}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-              <FormControl sx={{ flex: 1, minWidth: 200 }}>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
                 <InputLabel>Zorluk Seviyesi</InputLabel>
                 <Select
-                  value={form.difficultyLevel}
-                  onChange={(e) => setForm(prev => ({ ...prev, difficultyLevel: e.target.value as any }))}
+                  name="difficulty_level"
+                  value={questionForm.difficulty_level}
+                  onChange={handleNumberSelectChange}
+                  label="Zorluk Seviyesi"
                 >
-                  <MenuItem value="easy">Kolay</MenuItem>
-                  <MenuItem value="medium">Orta</MenuItem>
-                  <MenuItem value="hard">Zor</MenuItem>
+                  <MenuItem value={1}>Kolay</MenuItem>
+                  <MenuItem value={2}>Orta</MenuItem>
+                  <MenuItem value={3}>Zor</MenuItem>
                 </Select>
               </FormControl>
-            </Box>
-
-            {/* Soru İçeriği */}
-            <Box>
-              <Typography variant="h6" gutterBottom>Soru İçeriği</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                multiline
-                rows={3}
-                label="Soru Metni"
-                value={form.questionText}
-                onChange={(e) => setForm(prev => ({ ...prev, questionText: e.target.value }))}
+                label="Tahmini Süre (saniye)"
+                name="estimated_time"
+                type="number"
+                value={questionForm.estimated_time}
+                onChange={handleFormChange}
               />
-            </Box>
-
-            {/* Dosya Yüklemeler */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Box sx={{ flex: 1, minWidth: 200 }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle2" gutterBottom>Soru Görseli</Typography>
-                    {form.questionImageUrl && (
-                      <Box mb={1}>
-                        <Chip 
-                          label="Görsel yüklendi" 
-                          color="success" 
-                          size="small"
-                          onDelete={() => setForm(prev => ({ ...prev, questionImageUrl: '' }))}
-                        />
-                      </Box>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      id="question-image-upload"
-                      onChange={(e) => handleFileUpload(e.target.files, 'questionImage')}
-                    />
-                    <label htmlFor="question-image-upload">
-                      <Button
-                        component="span"
-                        variant="outlined"
-                        startIcon={<CloudUpload />}
-                        fullWidth
-                        disabled={uploadLoading}
-                      >
-                        Görsel Yükle
-                      </Button>
-                    </label>
-                  </CardContent>
-                </Card>
-              </Box>
-
-              <Box sx={{ flex: 1, minWidth: 200 }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="subtitle2" gutterBottom>Soru PDF</Typography>
-                    {form.questionPdfUrl && (
-                      <Box mb={1}>
-                        <Chip 
-                          label="PDF yüklendi" 
-                          color="success" 
-                          size="small"
-                          onDelete={() => setForm(prev => ({ ...prev, questionPdfUrl: '' }))}
-                        />
-                      </Box>
-                    )}
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      style={{ display: 'none' }}
-                      id="question-pdf-upload"
-                      onChange={(e) => handleFileUpload(e.target.files, 'questionPdf')}
-                    />
-                    <label htmlFor="question-pdf-upload">
-                      <Button
-                        component="span"
-                        variant="outlined"
-                        startIcon={<CloudUpload />}
-                        fullWidth
-                        disabled={uploadLoading}
-                      >
-                        PDF Yükle
-                      </Button>
-                    </label>
-                  </CardContent>
-                </Card>
-              </Box>
-            </Box>
-
-            {/* Cevaplar */}
-            <Box>
-              <Typography variant="h6" gutterBottom>Cevaplar</Typography>
-              {form.answers?.map((answer, index) => (
-                <Card key={index} variant="outlined" sx={{ mb: 2, p: 2 }}>
-                  <Box display="flex" flexDirection="column" gap={2}>
-                    <Box display="flex" alignItems="center" gap={1}>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Durum</InputLabel>
+                <Select
+                  name="is_active"
+                  value={questionForm.is_active}
+                  onChange={handleBooleanSelectChange}
+                  label="Durum"
+                >
+                  <MenuItem value="true">Aktif</MenuItem>
+                  <MenuItem value="false">Pasif</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Cevaplar
+              </Typography>
+              {questionForm.answers.map((answer, index) => (
+                <Box key={index} sx={{ mb: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label={`Cevap ${index + 1}`}
-                        value={answer.answerText || ''}
-                        onChange={(e) => updateAnswer(index, 'answerText', e.target.value)}
+                        label={`${answer.option_letter} Şıkkı`}
+                        value={answer.answer_text}
+                        onChange={e =>
+                          handleAnswerChange(index, 'answer_text', e.target.value)
+                        }
                       />
-                      <FormControl>
-                        <InputLabel>Doğru?</InputLabel>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Doğru Cevap</InputLabel>
                         <Select
-                          value={answer.isCorrect}
-                          onChange={(e) => updateAnswer(index, 'isCorrect', e.target.value)}
-                          sx={{ minWidth: 100 }}
+                          value={answer.is_correct}
+                          onChange={e =>
+                            handleAnswerChange(
+                              index,
+                              'is_correct',
+                              e.target.value === 'true'
+                            )
+                          }
+                          label="Doğru Cevap"
                         >
-                          <MenuItem value={true}>Evet</MenuItem>
-                          <MenuItem value={false}>Hayır</MenuItem>
+                          <MenuItem value="true">Doğru</MenuItem>
+                          <MenuItem value="false">Yanlış</MenuItem>
                         </Select>
                       </FormControl>
-                      <IconButton 
-                        onClick={() => removeAnswer(index)}
-                        disabled={(form.answers?.length || 0) === 1}
-                        color="error"
-                      >
-                        <Close />
-                      </IconButton>
-                    </Box>
-                    <TextField
-                      fullWidth
-                      label="Cevap Görsel URL (opsiyonel)"
-                      value={answer.answerImageUrl || ''}
-                      onChange={(e) => updateAnswer(index, 'answerImageUrl', e.target.value)}
-                    />
-                  </Box>
-                </Card>
+                    </Grid>
+                  </Grid>
+                </Box>
               ))}
-              <Button onClick={addAnswer} variant="outlined" size="small">
-                Cevap Ekle
-              </Button>
-            </Box>
-
-            {/* Çözüm */}
-            <Box>
-              <Typography variant="h6" gutterBottom>Çözüm</Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Açıklama"
-                value={form.explanation}
-                onChange={(e) => setForm(prev => ({ ...prev, explanation: e.target.value }))}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                type="number"
-                label="Tahmini Süre (dakika)"
-                value={form.estimatedTime}
-                onChange={(e) => setForm(prev => ({ ...prev, estimatedTime: Number(e.target.value) }))}
-                sx={{ maxWidth: 200 }}
-              />
-            </Box>
-          </Box>
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setCreateDialogOpen(false);
-            setEditDialogOpen(false);
-            resetForm();
-          }}>
-            İptal
-          </Button>
-          <Button 
-            onClick={editDialogOpen ? handleUpdateQuestion : handleCreateQuestion} 
-            variant="contained"
-            disabled={loading}
-          >
-            {editDialogOpen ? 'Güncelle' : 'Oluştur'}
+          <Button onClick={() => setCreateDialogOpen(false)}>İptal</Button>
+          <Button onClick={handleCreateQuestion} variant="contained" color="primary">
+            Oluştur
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* View Question Dialog */}
-      <Dialog 
-        open={viewDialogOpen} 
+      {/* Edit Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Soru Düzenle</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Soru Metni"
+                name="question_text"
+                value={questionForm.question_text}
+                onChange={handleFormChange}
+                multiline
+                rows={4}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Çözüm"
+                name="solution_text"
+                value={questionForm.solution_text}
+                onChange={handleFormChange}
+                multiline
+                rows={4}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Konu</InputLabel>
+                <Select
+                  name="topic_id"
+                  value={questionForm.topic_id}
+                  onChange={handleStringSelectChange}
+                  label="Konu"
+                >
+                  {topics.map(topic => (
+                    <MenuItem key={topic.id} value={topic.id}>
+                      {topic.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Zorluk Seviyesi</InputLabel>
+                <Select
+                  name="difficulty_level"
+                  value={questionForm.difficulty_level}
+                  onChange={handleNumberSelectChange}
+                  label="Zorluk Seviyesi"
+                >
+                  <MenuItem value={1}>Kolay</MenuItem>
+                  <MenuItem value={2}>Orta</MenuItem>
+                  <MenuItem value={3}>Zor</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Tahmini Süre (saniye)"
+                name="estimated_time"
+                type="number"
+                value={questionForm.estimated_time}
+                onChange={handleFormChange}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Durum</InputLabel>
+                <Select
+                  name="is_active"
+                  value={questionForm.is_active}
+                  onChange={handleBooleanSelectChange}
+                  label="Durum"
+                >
+                  <MenuItem value="true">Aktif</MenuItem>
+                  <MenuItem value="false">Pasif</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Cevaplar
+              </Typography>
+              {questionForm.answers.map((answer, index) => (
+                <Box key={index} sx={{ mb: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label={`${answer.option_letter} Şıkkı`}
+                        value={answer.answer_text}
+                        onChange={e =>
+                          handleAnswerChange(index, 'answer_text', e.target.value)
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Doğru Cevap</InputLabel>
+                        <Select
+                          value={answer.is_correct}
+                          onChange={e =>
+                            handleAnswerChange(
+                              index,
+                              'is_correct',
+                              e.target.value === 'true'
+                            )
+                          }
+                          label="Doğru Cevap"
+                        >
+                          <MenuItem value="true">Doğru</MenuItem>
+                          <MenuItem value="false">Yanlış</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                </Box>
+              ))}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>İptal</Button>
+          <Button onClick={handleUpdateQuestion} variant="contained" color="primary">
+            Güncelle
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Dialog */}
+      <Dialog
+        open={viewDialogOpen}
         onClose={() => setViewDialogOpen(false)}
-        maxWidth="md" 
+        maxWidth="md"
         fullWidth
       >
         <DialogTitle>Soru Detayı</DialogTitle>
         <DialogContent>
           {selectedQuestion && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="h6">
-                  {selectedQuestion.subject_name} - {selectedQuestion.class_name} - {selectedQuestion.topic_name}
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <Typography variant="h6">Soru</Typography>
+                <Typography>{selectedQuestion.question_text}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6">Çözüm</Typography>
+                <Typography>{selectedQuestion.solution_text}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="h6">Konu</Typography>
+                <Typography>{selectedQuestion.topic_name}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="h6">Zorluk Seviyesi</Typography>
+                <Typography>
+                  {selectedQuestion.difficulty_level === 1
+                    ? 'Kolay'
+                    : selectedQuestion.difficulty_level === 2
+                    ? 'Orta'
+                    : 'Zor'}
                 </Typography>
-                <Chip 
-                  label={getDifficultyLabel(selectedQuestion.difficulty_level)}
-                  color={getDifficultyColor(selectedQuestion.difficulty_level)}
-                  size="small"
-                  sx={{ mt: 1 }}
-                />
-              </Box>
-              
-              {selectedQuestion.question_text && (
-                <Box>
-                  <Typography variant="subtitle2">Soru Metni:</Typography>
-                  <Typography>{selectedQuestion.question_text}</Typography>
-                </Box>
-              )}
-
-              {selectedQuestion.answers && selectedQuestion.answers.length > 0 && (
-                <Box>
-                  <Typography variant="subtitle2">Cevaplar:</Typography>
-                  <List dense>
-                    {selectedQuestion.answers.map((answer, index) => (
-                      <ListItem key={index}>
-                        <ListItemText 
-                          primary={`${index + 1}. ${answer.answerText}`}
-                          secondary={answer.isCorrect ? 'Doğru cevap' : 'Yanlış cevap'}
-                        />
-                        {answer.isCorrect && (
-                          <Chip label="Doğru" color="success" size="small" sx={{ ml: 1 }} />
-                        )}
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
-              )}
-
-              {selectedQuestion.explanation && (
-                <Box>
-                  <Typography variant="subtitle2">Açıklama:</Typography>
-                  <Typography>{selectedQuestion.explanation}</Typography>
-                </Box>
-              )}
-
-              {selectedQuestion.estimated_time && (
-                <Box>
-                  <Typography variant="subtitle2">
-                    Tahmini Süre: {selectedQuestion.estimated_time} dakika
-                  </Typography>
-                </Box>
-              )}
-            </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="h6">Tahmini Süre</Typography>
+                <Typography>{selectedQuestion.estimated_time} saniye</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="h6">Durum</Typography>
+                <Typography>
+                  {selectedQuestion.is_active ? 'Aktif' : 'Pasif'}
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6">Cevaplar</Typography>
+                {selectedQuestion.answers.map((answer, index) => (
+                  <Box key={index} sx={{ mb: 2 }}>
+                    <Typography>
+                      {answer.option_letter}) {answer.answer_text}
+                      {answer.is_correct && ' (Doğru Cevap)'}
+                    </Typography>
+                  </Box>
+                ))}
+              </Grid>
+            </Grid>
           )}
         </DialogContent>
         <DialogActions>

@@ -27,19 +27,22 @@ import {
   Grid,
   FormControlLabel,
   Checkbox,
-  SelectChangeEvent
+  SelectChangeEvent,
+  IconButton
 } from '@mui/material';
 import {
-  Add,
+  Add as AddIcon,
   School,
   Quiz,
   Class as ClassIcon,
-  Assignment
+  Assignment,
+  Edit as EditIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
-import contentService, { 
-  Exam, 
-  Class as ClassType, 
-  Subject, 
+import contentService, {
+  Exam,
+  Class as ClassType,
+  Subject,
   Topic,
   CreateExamData,
   CreateClassData,
@@ -73,7 +76,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const Content: React.FC = () => {
+const Content = () => {
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -89,6 +92,8 @@ const Content: React.FC = () => {
   const [classDialogOpen, setClassDialogOpen] = useState(false);
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [topicDialogOpen, setTopicDialogOpen] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
 
   // Form states
   const [examForm, setExamForm] = useState<CreateExamData>({
@@ -120,11 +125,11 @@ const Content: React.FC = () => {
   const [topicForm, setTopicForm] = useState<CreateTopicData>({
     name: '',
     description: '',
-    subjectId: '',
-    classId: '',
-    parentId: undefined,
     orderIndex: 0,
-    isActive: true
+    subject_id: '',
+    class_id: '',
+    parent_id:'',
+    is_active: true
   });
 
   useEffect(() => {
@@ -134,17 +139,41 @@ const Content: React.FC = () => {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      const examsData = await contentService.getExams().catch(() => []);
-      const classesData = await contentService.getClasses().catch(() => []);
-      const subjectsData = await contentService.getSubjects().catch(() => []);
-      const topicsData = await contentService.getTopics().catch(() => []);
+      setError('');
+
+      // Her bir API çağrısını ayrı ayrı yapalım ve hataları yakalayalım
+      const [examsData, classesData, subjectsData, topicsData] = await Promise.all([
+        contentService.getExams().catch(error => {
+          console.error('Exams loading error:', error);
+          return [];
+        }),
+        contentService.getClasses().catch(error => {
+          console.error('Classes loading error:', error);
+          return [];
+        }),
+        contentService.getSubjects().catch(error => {
+          console.error('Subjects loading error:', error);
+          return [];
+        }),
+        contentService.getTopics().catch(error => {
+          console.error('Topics loading error:', error);
+          return [];
+        })
+      ]);
+
+      // State'leri güncelle
       setExams(examsData);
       setClasses(classesData);
       setSubjects(subjectsData);
       setTopics(topicsData);
+
+      // Eğer hiç veri yüklenemezse hata göster
+      if (!examsData.length && !classesData.length && !subjectsData.length && !topicsData.length) {
+        setError('Veriler yüklenemedi. Lütfen sayfayı yenileyin.');
+      }
     } catch (error: any) {
-      setError('Veriler yüklenirken hata oluştu');
       console.error('Data loading error:', error);
+      setError('Veriler yüklenirken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
     } finally {
       setLoading(false);
     }
@@ -228,11 +257,11 @@ const Content: React.FC = () => {
       setTopicForm({
         name: '',
         description: '',
-        subjectId: '',
-        classId: '',
-        parentId: undefined,
         orderIndex: 0,
-        isActive: true
+        subject_id: '',
+        class_id: '',
+        parent_id: '',
+        is_active: true
       });
       await loadAllData();
     } catch (error: any) {
@@ -246,7 +275,7 @@ const Content: React.FC = () => {
   const handleClassLevelChange = (level: number, field: 'targetClassLevels' | 'prepClassLevels') => {
     setExamForm(prev => ({
       ...prev,
-      [field]: prev[field].includes(level) 
+      [field]: prev[field].includes(level)
         ? prev[field].filter(l => l !== level)
         : [...prev[field], level]
     }));
@@ -261,12 +290,19 @@ const Content: React.FC = () => {
     }));
   };
 
-  // Zorluk seviyesi için handler
-  const handleDifficultyChange = (event: SelectChangeEvent<string>) => {
-    const difficulty = event.target.value as 'easy' | 'medium' | 'hard';
+  const handleTopicFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const { name, value } = e.target;
     setTopicForm(prev => ({
       ...prev,
-      difficultyLevel: difficulty
+      [name as string]: value
+    }));
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setTopicForm(prev => ({
+      ...prev,
+      [name]: value
     }));
   };
 
@@ -274,7 +310,56 @@ const Content: React.FC = () => {
     return new Date(dateString).toLocaleDateString('tr-TR');
   };
 
-  if (loading && !exams.length) {
+  const handleEdit = (topic: Topic) => {
+    setEditingTopic(topic);
+    setTopicForm({
+      name: topic.name,
+      description: topic.description || '',
+      class_level: topic.class_level,
+      orderIndex: topic.orderIndex,
+      subjectId: topic.subjectId,
+      classId: topic.classId,
+      parentId: topic.parentId,
+      isActive: topic.isActive
+    });
+    setOpenDialog(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await contentService.deleteTopic(id);
+      await loadAllData();
+    } catch (error: any) {
+      setError('Konu silinirken hata oluştu');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingTopic) {
+        await contentService.updateTopic(editingTopic.id, topicForm);
+      } else {
+        await contentService.createTopic(topicForm);
+      }
+      setOpenDialog(false);
+      setEditingTopic(null);
+      setTopicForm({
+        name: '',
+        description: '',
+        orderIndex: 0,
+        subject_id: '',
+        class_id: '',
+        parent_id: '',
+        is_active: true
+      });
+      await loadAllData();
+    } catch (error: any) {
+      setError('Konu kaydedilirken hata oluştu');
+    }
+  };
+
+  if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
@@ -289,7 +374,16 @@ const Content: React.FC = () => {
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => setError('')}
+          action={
+            <Button color="inherit" size="small" onClick={loadAllData}>
+              Yeniden Dene
+            </Button>
+          }
+        >
           {error}
         </Alert>
       )}
@@ -308,7 +402,7 @@ const Content: React.FC = () => {
             <Typography variant="h6">Sınavlar</Typography>
             <Button
               variant="contained"
-              startIcon={<Add />}
+              startIcon={<AddIcon />}
               onClick={() => setExamDialogOpen(true)}
             >
               Yeni Sınav
@@ -354,7 +448,7 @@ const Content: React.FC = () => {
             <Typography variant="h6">Sınıflar</Typography>
             <Button
               variant="contained"
-              startIcon={<Add />}
+              startIcon={<AddIcon />}
               onClick={() => setClassDialogOpen(true)}
             >
               Yeni Sınıf
@@ -392,7 +486,7 @@ const Content: React.FC = () => {
             <Typography variant="h6">Dersler</Typography>
             <Button
               variant="contained"
-              startIcon={<Add />}
+              startIcon={<AddIcon />}
               onClick={() => setSubjectDialogOpen(true)}
             >
               Yeni Ders
@@ -412,15 +506,13 @@ const Content: React.FC = () => {
                 {subjects.map((subject) => (
                   <TableRow key={subject.id}>
                     <TableCell>{subject.name}</TableCell>
-                    <TableCell>{subject.orderIndex}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={subject.isActive ? 'Aktif' : 'Pasif'} 
-                        color={subject.isActive ? 'success' : 'default'} 
-                        size="small" 
+                      <Chip
+                        label={subject.is_active ? 'Aktif' : 'Pasif'}
+                        color={subject.is_active ? 'success' : 'default'}
+                        size="small"
                       />
                     </TableCell>
-                    <TableCell>{formatDate(subject.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -434,8 +526,8 @@ const Content: React.FC = () => {
             <Typography variant="h6">Konular</Typography>
             <Button
               variant="contained"
-              startIcon={<Add />}
-              onClick={() => setTopicDialogOpen(true)}
+              startIcon={<AddIcon />}
+              onClick={() => setOpenDialog(true)}
             >
               Yeni Konu
             </Button>
@@ -449,8 +541,8 @@ const Content: React.FC = () => {
                   <TableCell>Sınıf</TableCell>
                   <TableCell>Sınıf Seviyesi</TableCell>
                   <TableCell>Üst Konu</TableCell>
-                  <TableCell>Durum</TableCell>
-                  <TableCell>Oluşturulma</TableCell>
+                  <TableCell>Sıra</TableCell>
+                  <TableCell>İşlemler</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -459,16 +551,14 @@ const Content: React.FC = () => {
                     <TableCell>{topic.name}</TableCell>
                     <TableCell>{topic.subject_name}</TableCell>
                     <TableCell>{topic.class_name}</TableCell>
-                    <TableCell>{topic.class_level}. Sınıf</TableCell>
-                    <TableCell>{topic.parent_name || '-'}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={topic.isActive ? 'Aktif' : 'Pasif'} 
-                        color={topic.isActive ? 'success' : 'default'} 
-                        size="small" 
-                      />
+                      <IconButton onClick={() => handleEdit(topic)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDelete(topic.id)}>
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
-                    <TableCell>{formatDate(topic.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -488,7 +578,7 @@ const Content: React.FC = () => {
               value={examForm.name}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamForm(prev => ({ ...prev, name: e.target.value }))}
             />
-            
+
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <TextField
                 fullWidth
@@ -499,7 +589,7 @@ const Content: React.FC = () => {
                 InputLabelProps={{ shrink: true }}
                 sx={{ minWidth: 200 }}
               />
-              
+
               <Box sx={{ flex: 1, minWidth: 200 }}>
                 <Typography variant="subtitle2" gutterBottom>Hedef Sınıf Seviyeleri</Typography>
                 {[5, 6, 7, 8].map(level => (
@@ -515,7 +605,7 @@ const Content: React.FC = () => {
                   />
                 ))}
               </Box>
-              
+
               <Box sx={{ flex: 1, minWidth: 200 }}>
                 <Typography variant="subtitle2" gutterBottom>Hazırlık Sınıf Seviyeleri</Typography>
                 {[5, 6, 7, 8].map(level => (
@@ -532,7 +622,7 @@ const Content: React.FC = () => {
                 ))}
               </Box>
             </Box>
-            
+
             <TextField
               fullWidth
               multiline
@@ -560,7 +650,7 @@ const Content: React.FC = () => {
               value={classForm.name}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClassForm(prev => ({ ...prev, name: e.target.value }))}
             />
-            
+
             <Box sx={{ display: 'flex', gap: 2 }}>
               <FormControl fullWidth>
                 <InputLabel>Min Sınıf Seviyesi</InputLabel>
@@ -574,7 +664,7 @@ const Content: React.FC = () => {
                   ))}
                 </Select>
               </FormControl>
-              
+
               <FormControl fullWidth>
                 <InputLabel>Max Sınıf Seviyesi</InputLabel>
                 <Select
@@ -588,7 +678,7 @@ const Content: React.FC = () => {
                 </Select>
               </FormControl>
             </Box>
-            
+
             <FormControl fullWidth>
               <InputLabel>Bağlı Sınav (Opsiyonel)</InputLabel>
               <Select
@@ -637,124 +727,96 @@ const Content: React.FC = () => {
       </Dialog>
 
       {/* Konu Oluşturma Dialog */}
-      <Dialog open={topicDialogOpen} onClose={() => setTopicDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Yeni Konu Oluştur</DialogTitle>
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingTopic ? 'Konu Düzenle' : 'Yeni Konu Oluştur'}</DialogTitle>
         <DialogContent>
-          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               fullWidth
+              name="name"
               label="Konu Adı"
               value={topicForm.name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTopicForm(prev => ({ ...prev, name: e.target.value }))}
+              onChange={handleTopicFormChange}
             />
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Ders</InputLabel>
-                <Select
-                  value={topicForm.subjectId}
-                  onChange={(e: SelectChangeEvent<string>) => setTopicForm(prev => ({ ...prev, subjectId: e.target.value }))}
-                  label="Ders"
-                >
-                  {subjects.map(subject => (
-                    <MenuItem key={subject.id} value={subject.id}>{subject.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              
-              <FormControl fullWidth>
-                <InputLabel>Sınıf</InputLabel>
-                <Select
-                  value={topicForm.classId}
-                  onChange={(e: SelectChangeEvent<string>) => setTopicForm(prev => ({ ...prev, classId: e.target.value }))}
-                  label="Sınıf"
-                >
-                  {classes.map(classItem => (
-                    <MenuItem key={classItem.id} value={classItem.id}>{classItem.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Üst Konu (Opsiyonel)</InputLabel>
-                <Select
-                  value={topicForm.parentId || ''}
-                  onChange={(e: SelectChangeEvent<string>) => setTopicForm(prev => ({ ...prev, parentId: e.target.value || undefined }))}
-                  label="Üst Konu (Opsiyonel)"
-                >
-                  <MenuItem value="">Ana Konu</MenuItem>
-                  {topics
-                    .filter(topic => 
-                      topic.subject_name === subjects.find(s => s.id === topicForm.subjectId)?.name &&
-                      topic.class_name === classes.find(c => c.id === topicForm.classId)?.name
-                    )
-                    .map(topic => (
-                      <MenuItem key={topic.id} value={topic.id}>{topic.name}</MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
-              
-              <TextField
-                fullWidth
-                type="number"
-                label="Sıra Numarası"
-                value={topicForm.orderIndex}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTopicForm(prev => ({ ...prev, orderIndex: Number(e.target.value) }))}
-              />
-            </Box>
 
-            {/* Konu seçimi için Select komponenti */}
             <FormControl fullWidth>
-              <InputLabel>Konu</InputLabel>
+              <InputLabel>Ders</InputLabel>
               <Select
-                value={topicForm.parentId || ''}
-                onChange={handleTopicChange}
-                label="Konu"
-                inputProps={{ 'aria-label': 'Konu seçimi' }}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300
-                    }
-                  }
-                }}
+                name="subjectId"
+                value={topicForm.subject_id}
+                onChange={handleSelectChange}
+                label="Ders"
               >
-                {topics.map(topic => (
-                  <MenuItem key={topic.id} value={topic.id}>
-                    {topic.subject_name} - {topic.class_name} ({topic.class_level}. Sınıf) - {topic.name}
+                {subjects.map((subject) => (
+                  <MenuItem key={subject.id} value={subject.id}>
+                    {subject.name}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            {/* Zorluk seviyesi için Select komponenti */}
             <FormControl fullWidth>
-              <InputLabel>Zorluk Seviyesi</InputLabel>
+              <InputLabel>Sınıf</InputLabel>
               <Select
-                value={topicForm.difficultyLevel || ''}
-                onChange={handleDifficultyChange}
-                label="Zorluk Seviyesi"
-                inputProps={{ 'aria-label': 'Zorluk seviyesi seçimi' }}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300
-                    }
-                  }
-                }}
+                name="classId"
+                value={topicForm.class_id}
+                onChange={handleSelectChange}
+                label="Sınıf"
               >
-                <MenuItem value="easy">Kolay</MenuItem>
-                <MenuItem value="medium">Orta</MenuItem>
-                <MenuItem value="hard">Zor</MenuItem>
+                {classes.map((cls) => (
+                  <MenuItem key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Üst Konu (Opsiyonel)</InputLabel>
+              <Select
+                name="parentId"
+                value={topicForm.parent_id || ''}
+                onChange={handleSelectChange}
+                label="Üst Konu (Opsiyonel)"
+              >
+                <MenuItem value="">Ana Konu</MenuItem>
+                {topics.map((topic) => (
+                  <MenuItem key={topic.id} value={topic.id}>
+                    {topic.name} ({topic.subject_name} - {topic.class_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Durum</InputLabel>
+              <Select
+                value={topicForm.is_active ? "true" : "false"}
+                onChange={(e) => setTopicForm({ ...topicForm, is_active: e.target.value === "true" })}
+                label="Durum"
+                sx={{ minWidth: 100 }}
+              >
+                <MenuItem value="true">Evet</MenuItem>
+                <MenuItem value="false">Hayır</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              name="orderIndex"
+              type="number"
+              label="Sıra Numarası"
+              value={topicForm.orderIndex}
+              onChange={handleTopicFormChange}
+            />
+
+            <Button type="submit" variant="contained" color="primary" fullWidth>
+              {editingTopic ? 'Güncelle' : 'Konu Ekle'}
+            </Button>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setTopicDialogOpen(false)}>İptal</Button>
-          <Button onClick={handleCreateTopic} variant="contained">Oluştur</Button>
+          <Button onClick={() => setOpenDialog(false)}>İptal</Button>
         </DialogActions>
       </Dialog>
     </Box>
