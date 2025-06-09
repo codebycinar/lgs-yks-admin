@@ -26,7 +26,8 @@ import {
   Alert,
   Grid,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  SelectChangeEvent
 } from '@mui/material';
 import {
   Add,
@@ -95,27 +96,35 @@ const Content: React.FC = () => {
     examDate: '',
     targetClassLevels: [],
     prepClassLevels: [],
-    description: ''
+    description: '',
+    isActive: true
   });
 
   const [classForm, setClassForm] = useState<CreateClassData>({
     name: '',
     minClassLevel: 5,
     maxClassLevel: 8,
-    examId: undefined
+    examId: '',
+    isActive: true
   });
 
   const [subjectForm, setSubjectForm] = useState<CreateSubjectData>({
     name: '',
-    orderIndex: 0
+    description: '',
+    orderIndex: 0,
+    isActive: true
   });
 
   const [topicForm, setTopicForm] = useState<CreateTopicData>({
     name: '',
-    subjectId: 0,
-    classId: 0,
+    description: '',
+    subjectId: '',
+    classId: '',
     parentId: undefined,
-    orderIndex: 0
+    orderIndex: 0,
+    isActive: true,
+    topicId: '',
+    difficultyLevel: 'medium'
   });
 
   useEffect(() => {
@@ -125,12 +134,10 @@ const Content: React.FC = () => {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      const [examsData, classesData, subjectsData, topicsData] = await Promise.all([
-        contentService.getExams(),
-        contentService.getClasses(),
-        contentService.getSubjects(),
-        contentService.getTopics()
-      ]);
+      const examsData = await contentService.getExams().catch(() => []);
+      const classesData = await contentService.getClasses().catch(() => []);
+      const subjectsData = await contentService.getSubjects().catch(() => []);
+      const topicsData = await contentService.getTopics().catch(() => []);
       setExams(examsData);
       setClasses(classesData);
       setSubjects(subjectsData);
@@ -158,7 +165,8 @@ const Content: React.FC = () => {
         examDate: '',
         targetClassLevels: [],
         prepClassLevels: [],
-        description: ''
+        description: '',
+        isActive: true
       });
       await loadAllData();
     } catch (error: any) {
@@ -178,7 +186,8 @@ const Content: React.FC = () => {
         name: '',
         minClassLevel: 5,
         maxClassLevel: 8,
-        examId: undefined
+        examId: '',
+        isActive: true
       });
       await loadAllData();
     } catch (error: any) {
@@ -196,7 +205,9 @@ const Content: React.FC = () => {
       setSubjectDialogOpen(false);
       setSubjectForm({
         name: '',
-        orderIndex: 0
+        description: '',
+        orderIndex: 0,
+        isActive: true
       });
       await loadAllData();
     } catch (error: any) {
@@ -214,10 +225,14 @@ const Content: React.FC = () => {
       setTopicDialogOpen(false);
       setTopicForm({
         name: '',
-        subjectId: 0,
-        classId: 0,
+        description: '',
+        subjectId: '',
+        classId: '',
         parentId: undefined,
-        orderIndex: 0
+        orderIndex: 0,
+        isActive: true,
+        topicId: '',
+        difficultyLevel: 'medium'
       });
       await loadAllData();
     } catch (error: any) {
@@ -234,6 +249,24 @@ const Content: React.FC = () => {
       [field]: prev[field].includes(level) 
         ? prev[field].filter(l => l !== level)
         : [...prev[field], level]
+    }));
+  };
+
+  // Konu seçimi için handler
+  const handleTopicChange = (event: SelectChangeEvent<string>) => {
+    const selectedTopicId = event.target.value;
+    setTopicForm(prev => ({
+      ...prev,
+      topicId: selectedTopicId
+    }));
+  };
+
+  // Zorluk seviyesi için handler
+  const handleDifficultyChange = (event: SelectChangeEvent<string>) => {
+    const difficulty = event.target.value as 'easy' | 'medium' | 'hard';
+    setTopicForm(prev => ({
+      ...prev,
+      difficultyLevel: difficulty
     }));
   };
 
@@ -296,18 +329,18 @@ const Content: React.FC = () => {
                 {exams.map((exam) => (
                   <TableRow key={exam.id}>
                     <TableCell>{exam.name}</TableCell>
-                    <TableCell>{formatDate(exam.exam_date)}</TableCell>
+                    <TableCell>{formatDate(exam.examDate)}</TableCell>
                     <TableCell>
-                      {exam.target_class_levels.map(level => (
+                      {exam.targetClassLevels.map(level => (
                         <Chip key={level} label={`${level}. Sınıf`} size="small" sx={{ mr: 0.5 }} />
                       ))}
                     </TableCell>
                     <TableCell>
-                      {exam.prep_class_levels.map(level => (
+                      {exam.prepClassLevels.map(level => (
                         <Chip key={level} label={`${level}. Sınıf`} size="small" sx={{ mr: 0.5 }} />
                       ))}
                     </TableCell>
-                    <TableCell>{formatDate(exam.created_at)}</TableCell>
+                    <TableCell>{formatDate(exam.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -342,10 +375,10 @@ const Content: React.FC = () => {
                 {classes.map((classItem) => (
                   <TableRow key={classItem.id}>
                     <TableCell>{classItem.name}</TableCell>
-                    <TableCell>{classItem.min_class_level}. Sınıf</TableCell>
-                    <TableCell>{classItem.max_class_level}. Sınıf</TableCell>
-                    <TableCell>{classItem.exam_name || '-'}</TableCell>
-                    <TableCell>{formatDate(classItem.created_at)}</TableCell>
+                    <TableCell>{classItem.minClassLevel}. Sınıf</TableCell>
+                    <TableCell>{classItem.maxClassLevel}. Sınıf</TableCell>
+                    <TableCell>{classItem.examId || '-'}</TableCell>
+                    <TableCell>{formatDate(classItem.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -379,15 +412,15 @@ const Content: React.FC = () => {
                 {subjects.map((subject) => (
                   <TableRow key={subject.id}>
                     <TableCell>{subject.name}</TableCell>
-                    <TableCell>{subject.order_index}</TableCell>
+                    <TableCell>{subject.orderIndex}</TableCell>
                     <TableCell>
                       <Chip 
-                        label={subject.is_active ? 'Aktif' : 'Pasif'} 
-                        color={subject.is_active ? 'success' : 'default'} 
+                        label={subject.isActive ? 'Aktif' : 'Pasif'} 
+                        color={subject.isActive ? 'success' : 'default'} 
                         size="small" 
                       />
                     </TableCell>
-                    <TableCell>{formatDate(subject.created_at)}</TableCell>
+                    <TableCell>{formatDate(subject.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -414,6 +447,7 @@ const Content: React.FC = () => {
                   <TableCell>Konu Adı</TableCell>
                   <TableCell>Ders</TableCell>
                   <TableCell>Sınıf</TableCell>
+                  <TableCell>Sınıf Seviyesi</TableCell>
                   <TableCell>Üst Konu</TableCell>
                   <TableCell>Durum</TableCell>
                   <TableCell>Oluşturulma</TableCell>
@@ -425,15 +459,16 @@ const Content: React.FC = () => {
                     <TableCell>{topic.name}</TableCell>
                     <TableCell>{topic.subject_name}</TableCell>
                     <TableCell>{topic.class_name}</TableCell>
+                    <TableCell>{topic.class_level}. Sınıf</TableCell>
                     <TableCell>{topic.parent_name || '-'}</TableCell>
                     <TableCell>
                       <Chip 
-                        label={topic.is_active ? 'Aktif' : 'Pasif'} 
-                        color={topic.is_active ? 'success' : 'default'} 
+                        label={topic.isActive ? 'Aktif' : 'Pasif'} 
+                        color={topic.isActive ? 'success' : 'default'} 
                         size="small" 
                       />
                     </TableCell>
-                    <TableCell>{formatDate(topic.created_at)}</TableCell>
+                    <TableCell>{formatDate(topic.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -451,7 +486,7 @@ const Content: React.FC = () => {
               fullWidth
               label="Sınav Adı"
               value={examForm.name}
-              onChange={(e) => setExamForm(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamForm(prev => ({ ...prev, name: e.target.value }))}
             />
             
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -460,7 +495,7 @@ const Content: React.FC = () => {
                 label="Sınav Tarihi"
                 type="date"
                 value={examForm.examDate}
-                onChange={(e) => setExamForm(prev => ({ ...prev, examDate: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamForm(prev => ({ ...prev, examDate: e.target.value }))}
                 InputLabelProps={{ shrink: true }}
                 sx={{ minWidth: 200 }}
               />
@@ -504,7 +539,7 @@ const Content: React.FC = () => {
               rows={3}
               label="Açıklama"
               value={examForm.description}
-              onChange={(e) => setExamForm(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExamForm(prev => ({ ...prev, description: e.target.value }))}
             />
           </Box>
         </DialogContent>
@@ -523,7 +558,7 @@ const Content: React.FC = () => {
               fullWidth
               label="Sınıf Adı"
               value={classForm.name}
-              onChange={(e) => setClassForm(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClassForm(prev => ({ ...prev, name: e.target.value }))}
             />
             
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -531,7 +566,8 @@ const Content: React.FC = () => {
                 <InputLabel>Min Sınıf Seviyesi</InputLabel>
                 <Select
                   value={classForm.minClassLevel}
-                  onChange={(e) => setClassForm(prev => ({ ...prev, minClassLevel: Number(e.target.value) }))}
+                  onChange={(e: SelectChangeEvent<number>) => setClassForm(prev => ({ ...prev, minClassLevel: Number(e.target.value) }))}
+                  label="Min Sınıf Seviyesi"
                 >
                   {[5, 6, 7, 8].map(level => (
                     <MenuItem key={level} value={level}>{level}. Sınıf</MenuItem>
@@ -543,7 +579,8 @@ const Content: React.FC = () => {
                 <InputLabel>Max Sınıf Seviyesi</InputLabel>
                 <Select
                   value={classForm.maxClassLevel}
-                  onChange={(e) => setClassForm(prev => ({ ...prev, maxClassLevel: Number(e.target.value) }))}
+                  onChange={(e: SelectChangeEvent<number>) => setClassForm(prev => ({ ...prev, maxClassLevel: Number(e.target.value) }))}
+                  label="Max Sınıf Seviyesi"
                 >
                   {[5, 6, 7, 8].map(level => (
                     <MenuItem key={level} value={level}>{level}. Sınıf</MenuItem>
@@ -556,7 +593,8 @@ const Content: React.FC = () => {
               <InputLabel>Bağlı Sınav (Opsiyonel)</InputLabel>
               <Select
                 value={classForm.examId || ''}
-                onChange={(e) => setClassForm(prev => ({ ...prev, examId: Number(e.target.value) || undefined }))}
+                onChange={(e: SelectChangeEvent<string>) => setClassForm(prev => ({ ...prev, examId: e.target.value }))}
+                label="Bağlı Sınav (Opsiyonel)"
               >
                 <MenuItem value="">Seçiniz</MenuItem>
                 {exams.map(exam => (
@@ -581,14 +619,14 @@ const Content: React.FC = () => {
               fullWidth
               label="Ders Adı"
               value={subjectForm.name}
-              onChange={(e) => setSubjectForm(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubjectForm(prev => ({ ...prev, name: e.target.value }))}
             />
             <TextField
               fullWidth
               type="number"
               label="Sıra Numarası"
               value={subjectForm.orderIndex}
-              onChange={(e) => setSubjectForm(prev => ({ ...prev, orderIndex: Number(e.target.value) }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubjectForm(prev => ({ ...prev, orderIndex: Number(e.target.value) }))}
             />
           </Box>
         </DialogContent>
@@ -607,7 +645,7 @@ const Content: React.FC = () => {
               fullWidth
               label="Konu Adı"
               value={topicForm.name}
-              onChange={(e) => setTopicForm(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTopicForm(prev => ({ ...prev, name: e.target.value }))}
             />
             
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -615,7 +653,8 @@ const Content: React.FC = () => {
                 <InputLabel>Ders</InputLabel>
                 <Select
                   value={topicForm.subjectId}
-                  onChange={(e) => setTopicForm(prev => ({ ...prev, subjectId: Number(e.target.value) }))}
+                  onChange={(e: SelectChangeEvent<string>) => setTopicForm(prev => ({ ...prev, subjectId: e.target.value }))}
+                  label="Ders"
                 >
                   {subjects.map(subject => (
                     <MenuItem key={subject.id} value={subject.id}>{subject.name}</MenuItem>
@@ -627,7 +666,8 @@ const Content: React.FC = () => {
                 <InputLabel>Sınıf</InputLabel>
                 <Select
                   value={topicForm.classId}
-                  onChange={(e) => setTopicForm(prev => ({ ...prev, classId: Number(e.target.value) }))}
+                  onChange={(e: SelectChangeEvent<string>) => setTopicForm(prev => ({ ...prev, classId: e.target.value }))}
+                  label="Sınıf"
                 >
                   {classes.map(classItem => (
                     <MenuItem key={classItem.id} value={classItem.id}>{classItem.name}</MenuItem>
@@ -641,11 +681,15 @@ const Content: React.FC = () => {
                 <InputLabel>Üst Konu (Opsiyonel)</InputLabel>
                 <Select
                   value={topicForm.parentId || ''}
-                  onChange={(e) => setTopicForm(prev => ({ ...prev, parentId: Number(e.target.value) || undefined }))}
+                  onChange={(e: SelectChangeEvent<string>) => setTopicForm(prev => ({ ...prev, parentId: e.target.value || undefined }))}
+                  label="Üst Konu (Opsiyonel)"
                 >
                   <MenuItem value="">Ana Konu</MenuItem>
                   {topics
-                    .filter(topic => topic.subject_id === topicForm.subjectId && topic.class_id === topicForm.classId)
+                    .filter(topic => 
+                      topic.subject_name === subjects.find(s => s.id === topicForm.subjectId)?.name &&
+                      topic.class_name === classes.find(c => c.id === topicForm.classId)?.name
+                    )
                     .map(topic => (
                       <MenuItem key={topic.id} value={topic.id}>{topic.name}</MenuItem>
                     ))}
@@ -657,9 +701,55 @@ const Content: React.FC = () => {
                 type="number"
                 label="Sıra Numarası"
                 value={topicForm.orderIndex}
-                onChange={(e) => setTopicForm(prev => ({ ...prev, orderIndex: Number(e.target.value) }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTopicForm(prev => ({ ...prev, orderIndex: Number(e.target.value) }))}
               />
             </Box>
+
+            {/* Konu seçimi için Select komponenti */}
+            <FormControl fullWidth>
+              <InputLabel>Konu</InputLabel>
+              <Select
+                value={topicForm.topicId || ''}
+                onChange={handleTopicChange}
+                label="Konu"
+                inputProps={{ 'aria-label': 'Konu seçimi' }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300
+                    }
+                  }
+                }}
+              >
+                {topics.map(topic => (
+                  <MenuItem key={topic.id} value={topic.id}>
+                    {topic.subject_name} - {topic.class_name} ({topic.class_level}. Sınıf) - {topic.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Zorluk seviyesi için Select komponenti */}
+            <FormControl fullWidth>
+              <InputLabel>Zorluk Seviyesi</InputLabel>
+              <Select
+                value={topicForm.difficultyLevel || ''}
+                onChange={handleDifficultyChange}
+                label="Zorluk Seviyesi"
+                inputProps={{ 'aria-label': 'Zorluk seviyesi seçimi' }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300
+                    }
+                  }
+                }}
+              >
+                <MenuItem value="easy">Kolay</MenuItem>
+                <MenuItem value="medium">Orta</MenuItem>
+                <MenuItem value="hard">Zor</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>

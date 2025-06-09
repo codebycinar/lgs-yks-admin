@@ -1,46 +1,68 @@
 import api from '../config/api';
 
 export interface Exam {
-  id: number;
+  id: string;
   name: string;
-  exam_date: string;
-  target_class_levels: number[];
-  prep_class_levels: number[];
-  description?: string;
-  created_at: string;
+  examDate: string;
+  targetClassLevels: number[];
+  prepClassLevels: number[];
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Class {
-  id: number;
+  id: string;
   name: string;
-  min_class_level: number;
-  max_class_level: number;
-  exam_id?: number;
-  exam_name?: string;
-  created_at: string;
+  minClassLevel: number;
+  maxClassLevel: number;
+  examId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Subject {
-  id: number;
+  id: string;
   name: string;
-  order_index: number;
-  is_active: boolean;
-  created_at: string;
+  description: string;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Topic {
-  id: number;
+  id: string;
   name: string;
-  subject_id: number;
-  subject_name?: string;
-  class_id: number;
-  class_name?: string;
-  parent_id?: number;
-  parent_name?: string;
-  order_index: number;
-  is_active: boolean;
-  created_at: string;
-  children?: Topic[];
+  orderIndex: number;
+  subject_name: string;
+  class_name: string;
+  class_level: number;
+  parent_name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Question {
+  id: string;
+  topicId: string;
+  difficultyLevel: 'easy' | 'medium' | 'hard';
+  questionText?: string;
+  questionImageUrl?: string;
+  questionPdfUrl?: string;
+  solutionText?: string;
+  solutionImageUrl?: string;
+  solutionPdfUrl?: string;
+  correctAnswers: any[];
+  explanation?: string;
+  keywords: string[];
+  estimatedTime?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateExamData {
@@ -48,27 +70,49 @@ export interface CreateExamData {
   examDate: string;
   targetClassLevels: number[];
   prepClassLevels: number[];
-  description?: string;
+  description: string;
+  isActive?: boolean;
 }
 
 export interface CreateClassData {
   name: string;
   minClassLevel: number;
   maxClassLevel: number;
-  examId?: number;
+  examId: string;
+  isActive?: boolean;
 }
 
 export interface CreateSubjectData {
   name: string;
-  orderIndex?: number;
+  description: string;
+  orderIndex: number;
+  isActive?: boolean;
 }
 
 export interface CreateTopicData {
   name: string;
-  subjectId: number;
-  classId: number;
-  parentId?: number;
-  orderIndex?: number;
+  orderIndex: number;
+  subjectId: string;
+  classId: string;
+  class_level: number;
+  parentId?: string;
+  isActive?: boolean;
+}
+
+export interface CreateQuestionData {
+  topicId: string;
+  difficultyLevel: 'easy' | 'medium' | 'hard';
+  questionText?: string;
+  questionImageUrl?: string;
+  questionPdfUrl?: string;
+  solutionText?: string;
+  solutionImageUrl?: string;
+  solutionPdfUrl?: string;
+  correctAnswers: any[];
+  explanation?: string;
+  keywords: string[];
+  estimatedTime?: number;
+  isActive?: boolean;
 }
 
 class ContentService {

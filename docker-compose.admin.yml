@@ -1,0 +1,24 @@
+services:
+  # Admin Panel React servisi
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    container_name: lgs_admin
+    environment:
+      - REACT_APP_API_URL=http://localhost:3000/api
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - admin_network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+networks:
+  admin_network:
+    driver: bridge 
