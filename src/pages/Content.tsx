@@ -314,13 +314,12 @@ const Content = () => {
     setEditingTopic(topic);
     setTopicForm({
       name: topic.name,
-      description: topic.description || '',
-      class_level: topic.class_level,
-      orderIndex: topic.orderIndex,
-      subjectId: topic.subjectId,
-      classId: topic.classId,
-      parentId: topic.parentId,
-      isActive: topic.isActive
+      description: '',
+      orderIndex: topic.order_index,
+      subject_id: topic.subject_id,
+      class_id: topic.class_id,
+      parent_id: topic.parent_id || '',
+      is_active: topic.is_active
     });
     setOpenDialog(true);
   };
@@ -550,7 +549,10 @@ const Content = () => {
                   <TableRow key={topic.id}>
                     <TableCell>{topic.name}</TableCell>
                     <TableCell>{topic.subject_name}</TableCell>
-                    <TableCell>{topic.class_name}</TableCell>
+                    <TableCell>Sınıf</TableCell>
+                    <TableCell>{topic.order_index}</TableCell>
+                    <TableCell>{topic.parent_name || 'Ana Konu'}</TableCell>
+                    <TableCell>{topic.order_index}</TableCell>
                     <TableCell>
                       <IconButton onClick={() => handleEdit(topic)}>
                         <EditIcon />
@@ -742,7 +744,7 @@ const Content = () => {
             <FormControl fullWidth>
               <InputLabel>Ders</InputLabel>
               <Select
-                name="subjectId"
+                name="subject_id"
                 value={topicForm.subject_id}
                 onChange={handleSelectChange}
                 label="Ders"
@@ -758,7 +760,7 @@ const Content = () => {
             <FormControl fullWidth>
               <InputLabel>Sınıf</InputLabel>
               <Select
-                name="classId"
+                name="class_id"
                 value={topicForm.class_id}
                 onChange={handleSelectChange}
                 label="Sınıf"
@@ -774,7 +776,7 @@ const Content = () => {
             <FormControl fullWidth>
               <InputLabel>Üst Konu (Opsiyonel)</InputLabel>
               <Select
-                name="parentId"
+                name="parent_id"
                 value={topicForm.parent_id || ''}
                 onChange={handleSelectChange}
                 label="Üst Konu (Opsiyonel)"
@@ -782,7 +784,7 @@ const Content = () => {
                 <MenuItem value="">Ana Konu</MenuItem>
                 {topics.map((topic) => (
                   <MenuItem key={topic.id} value={topic.id}>
-                    {topic.name} ({topic.subject_name} - {topic.class_name}
+                    {topic.name} ({topic.subject_name})
                   </MenuItem>
                 ))}
               </Select>

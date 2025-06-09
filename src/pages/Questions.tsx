@@ -227,7 +227,7 @@ const Questions: React.FC = () => {
       estimated_time: question.estimated_time,
       difficulty_level: question.difficulty_level,
       is_active: question.is_active,
-      topic_id: question.id,
+      topic_id: question.topic_id,
       answers: question.answers.map((answer, index) => ({
         option_letter: answer.option_letter,
         answer_text: answer.answer_text,

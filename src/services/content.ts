@@ -26,18 +26,22 @@ export interface Class {
 export interface Subject {
   id: string;
   name: string;
-  class_name: string;
+  order_index: number;
   is_active: boolean;
+  created_at: string;
 }
 
 export interface Topic {
   id: string;
   name: string;
   subject_id: string;
-  subject_name: string;
-  class_name: string;
+  class_id: string;
+  parent_id: string | null;
+  order_index: number;
   is_active: boolean;
   created_at: string;
+  subject_name: string;
+  parent_name: string | null;
 }
 
 export interface Answer {
@@ -186,17 +190,17 @@ const contentService = {
 
   // Konular
   createTopic: async (data: CreateTopicData): Promise<Topic> => {
-    const response = await api.post('/topics', data);
-    return response.data;
+    const response = await api.post('/admin/topics', data);
+    return response.data.data;
   },
 
-  updateTopic: async (data: UpdateTopicData): Promise<Topic> => {
-    const response = await api.put(`/topics/${data.id}`, data);
-    return response.data;
+  updateTopic: async (id: string, data: CreateTopicData): Promise<Topic> => {
+    const response = await api.put(`/admin/topics/${id}`, data);
+    return response.data.data;
   },
 
   deleteTopic: async (id: string): Promise<void> => {
-    await api.delete(`/topics/${id}`);
+    await api.delete(`/admin/topics/${id}`);
   },
 
   // Listeleme servisleri
@@ -211,13 +215,13 @@ const contentService = {
   },
 
   getSubjects: async (): Promise<Subject[]> => {
-    const response = await api.get('/subjects');
-    return response.data;
+    const response = await api.get('/admin/subjects');
+    return response.data.data || [];
   },
 
   getTopics: async (params?: GetTopicsParams): Promise<TopicsResponse> => {
-    const response = await api.get('/topics', { params });
-    return response.data;
+    const response = await api.get('/admin/topics', { params });
+    return { topics: response.data.data || [], pagination: { totalTopics: 0, totalPages: 0, currentPage: 1, limit: 10 } };
   },
 
   getQuestions: async (page: number = 1, limit: number = 10): Promise<PaginatedResponse<Question>> => {

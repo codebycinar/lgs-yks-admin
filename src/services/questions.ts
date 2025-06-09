@@ -11,6 +11,7 @@ export interface QuestionAnswer {
 
 export interface Question {
   id: string;
+  topic_id: string;
   question_text: string;
   question_image_url?: string;
   solution_text: string;
@@ -76,22 +77,22 @@ export interface FileUploadResponse {
 
 const questionsService = {
   getQuestions: async (params: GetQuestionsParams): Promise<QuestionsResponse> => {
-    const response = await api.get('/questions', { params });
-    return response.data;
+    const response = await api.get('/admin/questions', { params });
+    return response.data.data;
   },
 
   createQuestion: async (data: CreateQuestionData): Promise<Question> => {
-    const response = await api.post('/questions', data);
-    return response.data;
+    const response = await api.post('/admin/questions', data);
+    return response.data.data;
   },
 
   updateQuestion: async (data: UpdateQuestionData): Promise<Question> => {
-    const response = await api.put(`/questions/${data.id}`, data);
-    return response.data;
+    const response = await api.put(`/admin/questions/${data.id}`, data);
+    return response.data.data;
   },
 
   deleteQuestion: async (id: string): Promise<void> => {
-    await api.delete(`/questions/${id}`);
+    await api.delete(`/admin/questions/${id}`);
   },
 
   uploadFiles: async (files: FormData): Promise<FileUploadResponse> => {
