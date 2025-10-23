@@ -28,7 +28,8 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  PieLabelRenderProps
 } from 'recharts';
 import dashboardService, { DashboardStats } from '../services/dashboard';
 
@@ -60,6 +61,12 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
     </CardContent>
   </Card>
 );
+
+const renderSummaryLabel = ({ name, percent }: PieLabelRenderProps) => {
+  const numericPercent =
+    typeof percent === 'number' ? percent : Number(percent ?? 0);
+  return `${name ?? ''} (${(numericPercent * 100).toFixed(0)}%)`;
+};
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -190,7 +197,7 @@ const Dashboard: React.FC = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    label={renderSummaryLabel}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"

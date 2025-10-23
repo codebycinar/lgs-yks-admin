@@ -24,7 +24,8 @@ import {
   School,
   Quiz,
   ExitToApp,
-  AccountCircle
+  AccountCircle,
+  Insights
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -40,6 +41,7 @@ const menuItems: MenuItem[] = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
   { text: 'Kullanıcılar', icon: <People />, path: '/users' },
   { text: 'İçerik Yönetimi', icon: <School />, path: '/content' },
+  { text: 'Onboarding', icon: <Insights />, path: '/onboarding' },
   { text: 'Soru Havuzu', icon: <Quiz />, path: '/questions' },
 ];
 

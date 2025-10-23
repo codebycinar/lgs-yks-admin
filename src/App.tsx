@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Content from './pages/Content';
 import Questions from './pages/Questions';
+import Onboarding from './pages/Onboarding';
 
 // Material-UI teması
 const theme = createTheme({
@@ -44,6 +45,7 @@ function App() {
               {/* Diğer sayfalar sonra eklenecek */}
               <Route path="users" element={<Users />} />
               <Route path="content" element={<Content />} />
+              <Route path="onboarding" element={<Onboarding />} />
               <Route path="questions" element={<Questions />} />
             </Route>
             
